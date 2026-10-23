@@ -8,6 +8,8 @@ const props = defineProps<{
   fill: number
   /** The level being filled; when it goes up, the glass fills to the top, then starts over. */
   levelKey: number
+  /** Shown on the label while the glass celebrates a level-up, e.g. "★ Level 3 complete!". */
+  celebrateLabel: string
   label: string
   /** Read by screen readers instead of the percentage. */
   progressLabel: string
@@ -103,6 +105,10 @@ function pourTo(to: number, then?: () => void) {
   }
 }
 
+const celebrating = ref(false)
+const HOLD_MS = 900
+let holdTimer: ReturnType<typeof setTimeout> | undefined
+
 function rise(fill: number, key: number) {
   // -1 means nothing shown yet this visit: a first load is not a level-up.
   const levelledUp = lastShown.key >= 0 && key > lastShown.key
@@ -113,9 +119,14 @@ function rise(fill: number, key: number) {
     lastDraw = -Infinity
     draw(0)
   } else if (levelledUp) {
+    celebrating.value = true
     pourTo(1, () => {
-      level.value = 0
-      pourTo(fill)
+      // Hold it full for a beat, bubbles racing, before the next level starts empty.
+      holdTimer = setTimeout(() => {
+        celebrating.value = false
+        level.value = 0
+        pourTo(fill)
+      }, HOLD_MS)
     })
   } else pourTo(fill)
 }
@@ -128,7 +139,10 @@ watch(
   () => [props.fill, props.levelKey] as const,
   ([fill, key]) => rise(fill, key),
 )
-onBeforeUnmount(() => cancelAnimationFrame(frame))
+onBeforeUnmount(() => {
+  cancelAnimationFrame(frame)
+  clearTimeout(holdTimer)
+})
 </script>
 
 <script lang="ts">
@@ -175,9 +189,10 @@ const lastShown = { fill: 0, key: -1 }
     />
 
     <span
+      :class="{ 'animate-pop': celebrating }"
       class="relative inline-flex items-center gap-2 rounded-xl bg-panel/90 px-4 py-2 text-2xl font-bold text-cta shadow-soft sm:text-3xl"
     >
-      {{ label }}
+      {{ celebrating ? celebrateLabel : label }}
       <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
     </span>
     <!-- An empty glass shows no number: "0%" in a percentages app reads like a failing score. -->

@@ -21,6 +21,7 @@ export const es: Dictionary = {
   'home.reset': 'Borrar progreso',
   'home.resetConfirm': '¿Borrar todo tu progreso?',
 
+  'drill.levelDone': '★ ¡Nivel {n} completado!',
   'drill.reviewTag': '↺ repaso',
   'meter.toGoShort': '{n} más',
   'meter.label': '{done} de {goal}',
@@ -42,9 +43,6 @@ export const es: Dictionary = {
   'drill.dailyDone': '¡Reto diario listo!',
   'drill.session': '{right}/{total} bien',
   'drill.home': 'Inicio',
-
-  'dialog.title': '¡Nivel {n} completado!',
-  'dialog.startNext': 'Empezar nivel {n}',
 
   'prompt.of': '{pct}% de {base}',
   'prompt.whatPercent': '¿{part} es qué % de {whole}?',

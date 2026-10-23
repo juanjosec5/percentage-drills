@@ -6,7 +6,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
-import LevelCompleteDialog from './LevelCompleteDialog.vue'
 import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
@@ -77,6 +76,8 @@ const verdict = computed(() =>
 /** Read out by screen readers: focus moves to Next, so the verdict itself is never focused. */
 const announcement = computed(() => {
   if (phase.value === 'done') return t('drill.dailyDone')
+  if (finished.value !== null)
+    return `${verdict.value}. ${t('drill.levelDone', { n: finished.value + 1 })}`
   return phase.value === 'feedback' ? verdict.value : ''
 })
 
@@ -106,15 +107,15 @@ function submit() {
   if (progress.record(problemLevel.value, { correct: wasCorrect.value, ms }, props.mode)) {
     finished.value = problemLevel.value
     level.value = progress.unlocked
-  } else {
-    nextTick(() => nextEl.value?.focus())
+    // Back to Home, where the glass pours full and the next level opens: hard to miss, unlike a
+    // popup. Enter (Next has focus) goes straight away.
+    homeTimer = setTimeout(() => emit('exit'), LEVEL_UP_MS)
   }
+  nextTick(() => nextEl.value?.focus())
 }
 
-function onDialogClose() {
-  finished.value = null
-  if (phase.value === 'feedback') nextTick(() => nextEl.value?.focus())
-}
+const LEVEL_UP_MS = 1600
+let homeTimer: ReturnType<typeof setTimeout> | undefined
 
 function next() {
   if (dailySetDone.value) {
@@ -140,7 +141,10 @@ onMounted(() => {
   ask()
   document.addEventListener('visibilitychange', onVisibility)
 })
-onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibility))
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onVisibility)
+  clearTimeout(homeTimer)
+})
 </script>
 
 <template>
@@ -266,6 +270,9 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
           <p class="text-xl font-semibold" :class="verdictClass">
             <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
           </p>
+          <p v-if="finished !== null" class="animate-pop text-2xl font-bold text-cta">
+            {{ t('drill.levelDone', { n: finished + 1 }) }}
+          </p>
           <p v-if="!wasCorrect" class="font-mono text-ink-muted">
             <s aria-hidden="true">{{ input }}</s>
             <span class="sr-only">{{ t('drill.youAnswered', { input }) }}</span>
@@ -278,7 +285,11 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
           :breakdown="problem.breakdown"
           class="text-left"
         />
-        <button ref="nextEl" class="btn btn-primary w-full" @click="next">
+        <button
+          ref="nextEl"
+          class="btn btn-primary w-full"
+          @click="finished === null ? next() : emit('exit')"
+        >
           {{ t('drill.next') }}
           <span class="ml-1" aria-hidden="true">⏎</span>
         </button>
@@ -296,13 +307,5 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
         {{ t('drill.home') }}
       </button>
     </section>
-
-    <LevelCompleteDialog
-      :level="finished"
-      :next="level"
-      :finishing="dailySetDone"
-      @continue="next"
-      @close="onDialogClose"
-    />
   </div>
 </template>
