@@ -1,31 +1,28 @@
 @import 'tailwindcss';
 
-/* Palette: a calm paper-and-ink base. Colour is kept for the two signals that matter:
-   right/wrong, and the pieces of a breakdown. */
+/* Palette: bone paper, warm charcoal ink, and a six-hue rainbow for everything that moves
+   (breakdown pieces, progress, celebrations). Shadows are tinted warm so they sit on the bone
+   instead of looking grey. */
 :root {
-  --palette-ground: 250 248 244;
-  --palette-panel: 255 255 255;
-  --palette-line: 228 224 216;
-  --palette-ink: 28 27 25;
-  --palette-ink-muted: 110 106 99;
-  --palette-accent: 37 99 235; /* breakdown pieces, primary action */
-  --palette-accent-2: 14 165 160; /* alternating breakdown piece */
-  --palette-correct: 22 150 90;
-  --palette-wrong: 214 64 64;
-}
+  --palette-ground: 244 240 230; /* bone #F4F0E6 */
+  --palette-panel: 251 249 243; /* ivory #FBF9F3 */
+  --palette-line: 226 219 204; /* #E2DBCC */
+  --palette-ink: 38 34 29; /* charcoal #26221D */
+  --palette-ink-muted: 112 104 92; /* #70685C */
+  --palette-correct: 30 135 80; /* #1E8750 */
+  --palette-wrong: 196 58 50; /* #C43A32 */
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --palette-ground: 20 20 22;
-    --palette-panel: 30 30 34;
-    --palette-line: 52 52 58;
-    --palette-ink: 240 238 234;
-    --palette-ink-muted: 150 146 140;
-    --palette-accent: 96 140 255;
-    --palette-accent-2: 45 200 190;
-    --palette-correct: 60 200 130;
-    --palette-wrong: 240 100 100;
-  }
+  --rainbow-1: 239 83 80; /* red #EF5350 */
+  --rainbow-2: 255 152 67; /* orange #FF9843 */
+  --rainbow-3: 250 204 21; /* yellow #FACC15 */
+  --rainbow-4: 74 190 110; /* green #4ABE6E */
+  --rainbow-5: 66 133 244; /* blue #4285F4 */
+  --rainbow-6: 147 102 240; /* violet #9366F0 */
+
+  --palette-shadow: 92 70 38;
+
+  /* Always light: bone paper is the look, whatever the OS theme. */
+  color-scheme: light;
 }
 
 @theme {
@@ -34,13 +31,51 @@
   --color-line: rgb(var(--palette-line));
   --color-ink: rgb(var(--palette-ink));
   --color-ink-muted: rgb(var(--palette-ink-muted));
-  --color-accent: rgb(var(--palette-accent));
-  --color-accent-2: rgb(var(--palette-accent-2));
   --color-correct: rgb(var(--palette-correct));
   --color-wrong: rgb(var(--palette-wrong));
 
+  --shadow-soft:
+    0 1px 2px rgb(var(--palette-shadow) / 0.08), 0 4px 12px -2px rgb(var(--palette-shadow) / 0.1);
+  --shadow-lift:
+    0 2px 4px rgb(var(--palette-shadow) / 0.08), 0 14px 30px -8px rgb(var(--palette-shadow) / 0.22);
+  --shadow-press: inset 0 2px 4px rgb(var(--palette-shadow) / 0.18);
+
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --animate-rainbow: rainbow-shift 6s linear infinite;
+  --animate-glow: rainbow-glow 1.4s ease-out;
+  --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+
+  @keyframes rainbow-shift {
+    to {
+      background-position: 200% 0;
+    }
+  }
+  /* A halo that runs once through the spectrum, then settles back to the normal shadow. */
+  @keyframes rainbow-glow {
+    0% {
+      box-shadow: 0 0 0 0 rgb(var(--rainbow-1) / 0.6);
+    }
+    20% {
+      box-shadow: 0 0 30px 8px rgb(var(--rainbow-2) / 0.6);
+    }
+    40% {
+      box-shadow: 0 0 34px 9px rgb(var(--rainbow-4) / 0.55);
+    }
+    60% {
+      box-shadow: 0 0 34px 9px rgb(var(--rainbow-5) / 0.5);
+    }
+    80% {
+      box-shadow: 0 0 26px 6px rgb(var(--rainbow-6) / 0.4);
+    }
+  }
+  @keyframes pop {
+    from {
+      transform: scale(0.92);
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {
@@ -50,9 +85,71 @@
 }
 
 @utility card {
-  @apply rounded-xl border border-line bg-panel p-5;
+  @apply rounded-2xl border border-line/70 bg-panel p-5 shadow-soft;
+}
+
+/* A card you can click: lifts on hover, presses down on click. */
+@utility card-action {
+  @apply transition-[transform,box-shadow] duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-lift enabled:active:translate-y-0 enabled:active:shadow-press;
 }
 
 @utility btn {
-  @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-medium transition-opacity hover:opacity-90 disabled:opacity-40;
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 font-medium transition-[transform,box-shadow,opacity] duration-150 disabled:opacity-40;
+}
+
+/* Charcoal on bone, with a rainbow glow underneath on hover. */
+@utility btn-primary {
+  @apply bg-ink text-ground shadow-soft enabled:hover:-translate-y-px enabled:active:translate-y-0 enabled:active:shadow-press;
+  &:enabled:hover {
+    box-shadow:
+      -6px 6px 16px -6px rgb(var(--rainbow-1) / 0.55),
+      0 8px 18px -6px rgb(var(--rainbow-4) / 0.55),
+      6px 6px 16px -6px rgb(var(--rainbow-6) / 0.55);
+  }
+}
+
+@utility rainbow {
+  background-image: linear-gradient(
+    90deg,
+    rgb(var(--rainbow-1)),
+    rgb(var(--rainbow-2)),
+    rgb(var(--rainbow-3)),
+    rgb(var(--rainbow-4)),
+    rgb(var(--rainbow-5)),
+    rgb(var(--rainbow-6)),
+    rgb(var(--rainbow-1))
+  );
+  background-size: 200% 100%;
+}
+
+@utility rainbow-text {
+  @apply rainbow bg-clip-text text-transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Animated rainbow outline that keeps the panel fill inside. */
+@utility rainbow-border {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(rgb(var(--palette-panel)), rgb(var(--palette-panel))) padding-box,
+    linear-gradient(
+        90deg,
+        rgb(var(--rainbow-1)),
+        rgb(var(--rainbow-3)),
+        rgb(var(--rainbow-4)),
+        rgb(var(--rainbow-5)),
+        rgb(var(--rainbow-6)),
+        rgb(var(--rainbow-1))
+      )
+      border-box;
+  background-size: 200% 100%;
 }

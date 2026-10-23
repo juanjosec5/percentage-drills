@@ -14,14 +14,18 @@ onMounted(() => requestAnimationFrame(() => (shown.value = true)))
 
 const pos = (pct: number) => `${(pct / props.breakdown.scale) * 100}%`
 
+/** Number of --rainbow-N colour tokens in style.css. */
+const RAINBOW = 6
+
 function fill(seg: Segment, i: number): string {
-  if (seg.kind === 'base') return 'rgb(var(--palette-ink-muted) / 0.25)'
+  if (seg.kind === 'base') return 'rgb(var(--palette-line))'
   if (seg.kind === 'remove')
-    return 'repeating-linear-gradient(135deg, rgb(var(--palette-wrong) / 0.85) 0 4px, rgb(var(--palette-wrong) / 0.35) 4px 8px)'
+    return 'repeating-linear-gradient(135deg, rgb(var(--palette-ink) / 0.3) 0 4px, rgb(var(--palette-ink) / 0.08) 4px 8px)'
+  // Each added piece takes the next colour of the rainbow.
   const adds = props.breakdown.segments
     .slice(0, i)
     .filter((s) => s.kind === 'add' || s.kind === 'part')
-  return adds.length % 2 ? 'rgb(var(--palette-accent-2))' : 'rgb(var(--palette-accent))'
+  return `rgb(var(--rainbow-${(adds.length % RAINBOW) + 1}))`
 }
 
 const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 }, (_, i) => i * 10)
@@ -30,7 +34,9 @@ const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 },
 <template>
   <div class="space-y-4">
     <div>
-      <div class="relative h-9 overflow-hidden rounded-md border border-line bg-ground">
+      <div
+        class="relative h-10 overflow-hidden rounded-lg border border-line bg-ground shadow-press"
+      >
         <div
           v-for="t in ticks"
           :key="t"
@@ -40,8 +46,7 @@ const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 },
         <div
           v-for="(seg, i) in breakdown.segments"
           :key="i"
-          class="absolute inset-y-0 flex items-center justify-center overflow-hidden text-xs font-semibold whitespace-nowrap transition-all duration-500 ease-out"
-          :class="seg.kind === 'base' ? 'text-ink' : 'text-white'"
+          class="absolute inset-y-0 flex items-center justify-center overflow-hidden text-xs font-semibold whitespace-nowrap text-ink transition-all duration-500 ease-out"
           :style="{
             left: pos(seg.from),
             width: shown ? pos(seg.to - seg.from) : '0%',
