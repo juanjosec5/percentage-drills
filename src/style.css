@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+
+/* Palette: a calm paper-and-ink base. Colour is kept for the two signals that matter:
+   right/wrong, and the pieces of a breakdown. */
+:root {
+  --palette-ground: 250 248 244;
+  --palette-panel: 255 255 255;
+  --palette-line: 228 224 216;
+  --palette-ink: 28 27 25;
+  --palette-ink-muted: 110 106 99;
+  --palette-accent: 37 99 235; /* breakdown pieces, primary action */
+  --palette-accent-2: 14 165 160; /* alternating breakdown piece */
+  --palette-correct: 22 150 90;
+  --palette-wrong: 214 64 64;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --palette-ground: 20 20 22;
+    --palette-panel: 30 30 34;
+    --palette-line: 52 52 58;
+    --palette-ink: 240 238 234;
+    --palette-ink-muted: 150 146 140;
+    --palette-accent: 96 140 255;
+    --palette-accent-2: 45 200 190;
+    --palette-correct: 60 200 130;
+    --palette-wrong: 240 100 100;
+  }
+}
+
+@theme {
+  --color-ground: rgb(var(--palette-ground));
+  --color-panel: rgb(var(--palette-panel));
+  --color-line: rgb(var(--palette-line));
+  --color-ink: rgb(var(--palette-ink));
+  --color-ink-muted: rgb(var(--palette-ink-muted));
+  --color-accent: rgb(var(--palette-accent));
+  --color-accent-2: rgb(var(--palette-accent-2));
+  --color-correct: rgb(var(--palette-correct));
+  --color-wrong: rgb(var(--palette-wrong));
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-ground font-sans text-ink antialiased;
+  }
+}
+
+@utility card {
+  @apply rounded-xl border border-line bg-panel p-5;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-medium transition-opacity hover:opacity-90 disabled:opacity-40;
+}

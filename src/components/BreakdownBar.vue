@@ -1,0 +1,73 @@
+<script setup lang="ts">
+// Draws a problem's breakdown: a bar standing for the whole (100%), with each piece of the
+// calculation laid on it in turn, then the steps written out.
+import { onMounted, ref } from 'vue'
+
+import { fmt } from '@/engine/math'
+import type { Breakdown, Segment } from '@/engine/levels'
+
+const props = defineProps<{ breakdown: Breakdown }>()
+
+// Segments grow in one after another once mounted.
+const shown = ref(false)
+onMounted(() => requestAnimationFrame(() => (shown.value = true)))
+
+const pos = (pct: number) => `${(pct / props.breakdown.scale) * 100}%`
+
+function fill(seg: Segment, i: number): string {
+  if (seg.kind === 'base') return 'rgb(var(--palette-ink-muted) / 0.25)'
+  if (seg.kind === 'remove')
+    return 'repeating-linear-gradient(135deg, rgb(var(--palette-wrong) / 0.85) 0 4px, rgb(var(--palette-wrong) / 0.35) 4px 8px)'
+  const adds = props.breakdown.segments
+    .slice(0, i)
+    .filter((s) => s.kind === 'add' || s.kind === 'part')
+  return adds.length % 2 ? 'rgb(var(--palette-accent-2))' : 'rgb(var(--palette-accent))'
+}
+
+const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 }, (_, i) => i * 10)
+</script>
+
+<template>
+  <div class="space-y-4">
+    <div>
+      <div class="relative h-9 overflow-hidden rounded-md border border-line bg-ground">
+        <div
+          v-for="t in ticks"
+          :key="t"
+          class="absolute inset-y-0 w-px bg-line"
+          :style="{ left: pos(t) }"
+        />
+        <div
+          v-for="(seg, i) in breakdown.segments"
+          :key="i"
+          class="absolute inset-y-0 flex items-center justify-center overflow-hidden text-xs font-semibold whitespace-nowrap transition-all duration-500 ease-out"
+          :class="seg.kind === 'base' ? 'text-ink' : 'text-white'"
+          :style="{
+            left: pos(seg.from),
+            width: shown ? pos(seg.to - seg.from) : '0%',
+            minWidth: shown ? '3px' : '0',
+            background: fill(seg, i),
+            transitionDelay: `${i * 350}ms`,
+          }"
+          :title="seg.label"
+        >
+          <span v-if="(seg.to - seg.from) / breakdown.scale >= 0.08" class="px-1">{{
+            seg.label
+          }}</span>
+        </div>
+      </div>
+      <div class="relative mt-1 h-4 font-mono text-[11px] text-ink-muted">
+        <span class="absolute left-0">0</span>
+        <span class="absolute -translate-x-full whitespace-nowrap" :style="{ left: pos(100) }"
+          >{{ fmt(breakdown.base) }} = 100%</span
+        >
+        <span v-if="breakdown.scale > 100" class="absolute right-0">{{ breakdown.scale }}%</span>
+      </div>
+    </div>
+
+    <ol class="space-y-1 font-mono text-sm text-ink-muted">
+      <li v-for="(step, i) in breakdown.steps" :key="i">{{ step }}</li>
+    </ol>
+    <p class="font-mono text-base font-semibold">{{ breakdown.result }}</p>
+  </div>
+</template>
