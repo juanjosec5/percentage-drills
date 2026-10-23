@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
 import LiquidCta from './LiquidCta.vue'
+import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
@@ -83,6 +84,7 @@ function confirmReset() {
           <span class="w-6 shrink-0 font-mono text-ink-muted">{{ i + 1 }}</span>
           <span class="min-w-0 flex-1 space-y-1.5">
             <span class="block font-medium">{{ t(level.title) }}</span>
+            <MasteryMeter v-if="isCurrent(i)" :level-index="i" hide-count />
           </span>
           <span
             v-if="isMastered(i)"

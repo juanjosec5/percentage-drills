@@ -9,7 +9,12 @@ import { LEVELS } from '@/engine/levels'
 import { answersToMastery, WINDOW } from '@/engine/mastery'
 import { useProgress } from '@/stores/progress'
 
-const props = defineProps<{ levelIndex: number; compact?: boolean }>()
+const props = defineProps<{
+  levelIndex: number
+  compact?: boolean
+  /** Pips only: on Home the glass already shows how many more are needed. */
+  hideCount?: boolean
+}>()
 const { t } = useI18n()
 const progress = useProgress()
 
@@ -54,7 +59,7 @@ const PIP_MARK: Record<Pip, string> = { fast: '✓', slow: '✓', wrong: '✗', 
         >{{ compact ? '' : PIP_MARK[pip] }}</span
       >
     </span>
-    <span class="text-xs whitespace-nowrap text-ink-muted">
+    <span v-if="!hideCount" class="text-xs whitespace-nowrap text-ink-muted">
       {{ t('meter.toGoShort', { n: toGo }) }}
     </span>
   </span>
