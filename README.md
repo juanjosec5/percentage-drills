@@ -7,7 +7,10 @@ sessions every day, and you only move up once a step is both accurate and fast.
 
 - **Daily set:** 10 problems a day. Finishing it keeps your streak going.
 - **Endless:** a new problem every time you answer one, for as long as you like.
-- **Timer:** every problem is timed from when it appears to when you submit.
+- **Timer:** every problem is timed from when it appears to when you submit, and the level's
+  target time is shown from the start. "Timer: off" hides the running clock (the time still
+  counts and shows after you answer). Leaving the page mid-problem drops that problem, so an
+  interruption never records a very slow answer.
 - **Breakdown:** after each answer, a bar shows the whole (100%) with each piece of the
   calculation laid on it (for example 10% + 5% for 15%), followed by the steps written out.
 - **Levels:** 12 levels, from "10% of round numbers" to a mixed review. You move up when your

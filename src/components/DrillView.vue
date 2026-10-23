@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // One problem at a time, timed. After each answer: right or wrong, the time, and a visual
 // breakdown. Daily mode stops after the day's set; endless mode keeps going until you stop.
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
@@ -37,6 +37,12 @@ const reviewing = ref(false)
 /** The level just mastered, while its popup is open. */
 const finished = ref<number | null>(null)
 const session = ref<Answer[]>([])
+/** The last problem was dropped because the page was hidden mid-answer. */
+const voided = ref(false)
+let leftMidProblem = false
+/** "Speed still counts" shows once per session, the first time the hidden timer is revealed. */
+const speedNote = ref(false)
+let speedNoteSeen = false
 
 const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
@@ -47,7 +53,13 @@ const current = computed(() => LEVELS[level.value])
 const asked = computed(() => LEVELS[problemLevel.value])
 const canSubmit = computed(() => parseAnswer(input.value) !== null)
 const invalid = computed(() => input.value.trim() !== '' && !canSubmit.value)
-const tooSlow = computed(() => clock.ms.value / 1000 > asked.value.targetSeconds)
+// The target is on screen from the start, so the clock reads as a goal rather than a threat.
+const timeLine = computed(() => {
+  const target = asked.value.targetSeconds
+  if (phase.value === 'asking' && !progress.settings.showTimer)
+    return t('drill.timeHidden', { target })
+  return t('drill.time', { time: seconds(clock.ms.value), target })
+})
 const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))
 
 const sessionCorrect = computed(() => session.value.filter((a) => a.correct).length)
@@ -84,6 +96,9 @@ function ask() {
 function submit() {
   if (phase.value !== 'asking' || !problem.value || !canSubmit.value) return
   const ms = clock.stop()
+  voided.value = false
+  speedNote.value = !progress.settings.showTimer && !speedNoteSeen
+  speedNoteSeen ||= speedNote.value
   wasCorrect.value = isCorrect(input.value, problem.value.answer)
   session.value.push({ correct: wasCorrect.value, ms })
   phase.value = 'feedback'
@@ -107,7 +122,24 @@ function next() {
   } else ask()
 }
 
-onMounted(ask)
+// An interruption shouldn't record a 90-second answer, so a problem left mid-answer doesn't
+// count: the same outcome as pressing Back, so it opens no new way to skip a hard one.
+function onVisibility() {
+  if (document.visibilityState === 'hidden' && phase.value === 'asking') {
+    clock.cancel()
+    leftMidProblem = true
+  } else if (document.visibilityState === 'visible' && leftMidProblem) {
+    leftMidProblem = false
+    voided.value = true
+    ask()
+  }
+}
+
+onMounted(() => {
+  ask()
+  document.addEventListener('visibilitychange', onVisibility)
+})
+onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibility))
 </script>
 
 <template>
@@ -151,10 +183,23 @@ onMounted(ask)
 
     <p class="sr-only" aria-live="polite">{{ announcement }}</p>
 
-    <p v-if="phase !== 'done'" class="text-xs tracking-wide text-ink-muted uppercase">
-      {{ t('drill.level', { n: level + 1, title: current.title }) }}
-      <span v-if="reviewing">{{ t('drill.review', { title: asked.title }) }}</span>
-    </p>
+    <div v-if="phase !== 'done'" class="flex items-start justify-between gap-3">
+      <p class="text-xs tracking-wide text-ink-muted uppercase">
+        {{ t('drill.level', { n: level + 1, title: current.title }) }}
+        <span v-if="reviewing">{{ t('drill.review', { title: asked.title }) }}</span>
+      </p>
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="progress.settings.showTimer"
+        class="shrink-0 text-xs whitespace-nowrap text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+        @click="progress.setShowTimer(!progress.settings.showTimer)"
+      >
+        {{ t(progress.settings.showTimer ? 'drill.timerOn' : 'drill.timerOff') }}
+      </button>
+    </div>
+
+    <p v-if="voided" class="text-sm text-ink-muted" role="status">{{ t('drill.voided') }}</p>
 
     <template v-if="phase !== 'done' && problem">
       <section
@@ -163,8 +208,13 @@ onMounted(ask)
       >
         <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
         <!-- Stays grey after answering: the verdict line alone carries right/wrong. -->
-        <p class="font-mono text-lg text-ink-muted tabular-nums">
-          {{ t(seconds(clock.ms.value)) }}
+        <p
+          class="text-ink-muted tabular-nums"
+          :class="
+            phase === 'asking' && !progress.settings.showTimer ? 'text-base' : 'font-mono text-lg'
+          "
+        >
+          {{ timeLine }}
         </p>
 
         <form v-if="phase === 'asking'" class="space-y-2" @submit.prevent="submit">
@@ -197,9 +247,7 @@ onMounted(ask)
           <p v-if="!wasCorrect" class="text-sm text-ink-muted">
             {{ t('drill.youAnswered', { input }) }}
           </p>
-          <p v-if="tooSlow" class="text-sm text-ink-muted">
-            {{ t('drill.target', { target: asked.targetSeconds }) }}
-          </p>
+          <p v-if="speedNote" class="text-sm text-ink-muted">{{ t('drill.speedCounts') }}</p>
         </div>
       </section>
 
