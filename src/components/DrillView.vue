@@ -11,7 +11,7 @@ import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
 import { fmt, isCorrect, parseAnswer } from '@/engine/math'
-import { median, type Answer } from '@/engine/mastery'
+import { type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
@@ -64,7 +64,11 @@ const timeLine = computed(() => {
 const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))
 
 const sessionCorrect = computed(() => session.value.filter((a) => a.correct).length)
-const sessionMedian = computed(() => median(session.value.map((a) => a.ms)))
+// A plain average for the session header: it is labelled "average". Mastery itself still uses
+// the median, so one interrupted answer can't block a level.
+const sessionAverage = computed(() =>
+  session.value.length ? session.value.reduce((sum, a) => sum + a.ms, 0) / session.value.length : 0,
+)
 const dailyAnswered = computed(() => Math.min(progress.today.daily, DAILY_COUNT))
 /** Daily mode with today's set complete: the drill ends after this answer. */
 const dailySetDone = computed(() => props.mode === 'daily' && progress.dailyDone)
@@ -161,7 +165,7 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
             t('drill.endless', { right: sessionCorrect, total: session.length })
           }}</span>
           <span v-if="session.length">{{
-            t('drill.median', { time: seconds(sessionMedian) })
+            t('drill.average', { time: seconds(sessionAverage) })
           }}</span>
         </p>
         <LanguageToggle />
@@ -276,7 +280,7 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
           t('drill.session', {
             right: sessionCorrect,
             total: session.length,
-            time: seconds(sessionMedian),
+            time: seconds(sessionAverage),
           })
         }}
       </p>
