@@ -54,6 +54,8 @@
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
   /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
   --animate-fade: fade 0.4s ease-out both;
+  /* The current node on the map: a ring that pulses out a few times, then holds still. */
+  --animate-ring: ring 1.6s ease-out 3;
   /* Bubbles drifting up the Start button's liquid. */
   --animate-bubble: bubble 3s ease-in infinite;
 
@@ -92,6 +94,14 @@
     100% {
       transform: translateY(-9rem);
       opacity: 0;
+    }
+  }
+  @keyframes ring {
+    0% {
+      box-shadow: 0 0 0 0 rgb(var(--palette-cta) / 0.45);
+    }
+    100% {
+      box-shadow: 0 0 0 14px rgb(var(--palette-cta) / 0);
     }
   }
   @keyframes fade {

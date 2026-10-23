@@ -9,6 +9,8 @@ import { LOCALES, translate, type Entry } from '@/i18n'
 const TITLE_MAX = 24
 /** One line above the prompt; the longest today is the Spanish fractions tip (41). */
 const TIP_MAX = 42
+/** Fits inside a level's round node on the map. */
+const SHORT_MAX = 4
 
 const templates = (e: Entry) => (typeof e === 'function' ? [e({ n: 1 }), e({ n: 2 })] : [e])
 
@@ -16,6 +18,7 @@ describe('copy', () => {
   it.each(LOCALES)('keeps level titles and tips short (%s)', (lang) => {
     for (const level of LEVELS) {
       expect(translate(lang, level.title).length, level.id).toBeLessThanOrEqual(TITLE_MAX)
+      expect(translate(lang, level.short).length, level.id).toBeLessThanOrEqual(SHORT_MAX)
       if (level.strategy)
         expect(translate(lang, level.strategy).length, level.id).toBeLessThanOrEqual(TIP_MAX)
     }

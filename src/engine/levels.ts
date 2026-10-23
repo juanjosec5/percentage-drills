@@ -34,6 +34,8 @@ export interface Problem {
 export interface Level {
   id: string
   title: Msg
+  /** A few characters for the level's node on the map. */
+  short: Msg
   /** The tip shown on a level's first problem. Mixed has none: it only reuses earlier tricks. */
   strategy?: Msg
   /** Target seconds per problem to count as fast enough for mastery. */
@@ -131,6 +133,7 @@ type LevelId =
 const text = (id: Exclude<LevelId, 'mixed'>) => ({
   id,
   title: msg(`level.${id}.title`),
+  short: msg(`level.${id}.short`),
   strategy: msg(`level.${id}.strategy`),
 })
 
@@ -263,6 +266,7 @@ export const LEVELS: Level[] = [
   {
     id: 'mixed',
     title: msg('level.mixed.title'),
+    short: msg('level.mixed.short'),
     targetSeconds: 12,
     generate: (rng) => pick(rng, LADDER).generate(rng),
   },

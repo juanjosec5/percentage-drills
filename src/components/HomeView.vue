@@ -2,8 +2,8 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
+import LevelMap from './LevelMap.vue'
 import LiquidCta from './LiquidCta.vue'
-import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
@@ -24,8 +24,6 @@ const toGo = computed(() =>
   answersToMastery(LEVELS[progress.unlocked], progress.history[LEVELS[progress.unlocked].id] ?? []),
 )
 const levelFill = computed(() => (progress.allMastered ? 1 : (GOAL - toGo.value) / GOAL))
-const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
-const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
 
 // The level that opened since Home was last shown: its row and the new ★ pop in, timed after the
 // glass has poured full (module scope, so it survives the trip to the drill and back).
@@ -134,52 +132,7 @@ const OPEN_DELAY_MS = 1100
       {{ t('home.endlessLink') }}
     </button>
 
-    <ol class="space-y-1" :aria-label="t('home.levels')">
-      <li v-for="(level, i) in LEVELS" :key="level.id">
-        <button
-          class="relative flex min-h-11 w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2 text-left transition-colors enabled:hover:bg-panel disabled:opacity-45"
-          :class="{
-            'card-action bg-panel py-3 shadow-soft': isCurrent(i),
-            'animate-pop': justOpened !== null && (i === justOpened || i === justOpened - 1),
-          }"
-          :disabled="i > progress.unlocked"
-          @click="emit('start', 'endless', i)"
-        >
-          <span
-            v-if="isCurrent(i)"
-            class="absolute inset-y-0 left-0 w-1 bg-cta"
-            aria-hidden="true"
-          />
-          <span class="w-6 shrink-0 font-mono text-ink-muted">{{ i + 1 }}</span>
-          <span class="min-w-0 flex-1 space-y-1.5">
-            <span class="block font-medium">{{ t(level.title) }}</span>
-            <MasteryMeter v-if="isCurrent(i)" :level-index="i" hide-count />
-          </span>
-          <span
-            v-if="isMastered(i) && progress.isPlaced(i)"
-            role="img"
-            :aria-label="t('home.placed')"
-            class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-star text-sm text-ink-muted"
-            >☆</span
-          >
-          <span
-            v-else-if="isMastered(i)"
-            :class="{ 'animate-pop': justOpened !== null && i === justOpened - 1 }"
-            role="img"
-            :aria-label="t('home.mastered')"
-            class="flex size-6 shrink-0 items-center justify-center rounded-full bg-star text-sm text-ink shadow-soft"
-            >★</span
-          >
-          <span
-            v-else-if="!isCurrent(i)"
-            role="img"
-            :aria-label="t('home.locked')"
-            class="flex size-6 shrink-0 items-center justify-center text-sm"
-            >🔒</span
-          >
-        </button>
-      </li>
-    </ol>
+    <LevelMap :just-opened="justOpened" @start="(i) => emit('start', 'endless', i)" />
 
     <div class="flex gap-4 text-xs text-ink-muted [&>button]:underline">
       <button @click="confirmReset">{{ t('home.reset') }}</button>
