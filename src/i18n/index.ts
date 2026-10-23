@@ -59,7 +59,5 @@ export function translate(lang: Locale, m: Msg): string {
       .replace(PLACEHOLDER, (whole, name: string, digits?: string) =>
         name in params ? render(lang, params[name], digits ? Number(digits) : undefined) : whole,
       )
-      // "15 %" must not wrap between the number and the sign.
-      .replace(/(\d) %/g, '$1 %')
   )
 }

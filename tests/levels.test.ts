@@ -9,11 +9,11 @@ const es = (m: Msg) => translate('es', m)
 // Like solve() below, for Spanish prompts, so a translation can't change the maths.
 function solveEs(prompt: string): number {
   const num = (s: string) => Number(s.replace(',', '.'))
-  let m = prompt.match(/^([\d,]+)\s% de ([\d,]+)$/)
+  let m = prompt.match(/^([\d,]+)% de ([\d,]+)$/)
   if (m) return percentOf(num(m[1]), num(m[2]))
   m = prompt.match(/^¿([\d,]+) es qué % de ([\d,]+)\?$/)
   if (m) return round2((num(m[1]) / num(m[2])) * 100)
-  m = prompt.match(/^([\d,]+) ([+−]) ([\d,]+)\s%$/)
+  m = prompt.match(/^([\d,]+) ([+−]) ([\d,]+)%$/)
   if (m) return applyChange(num(m[1]), (m[2] === '+' ? 1 : -1) * num(m[3]))
   throw new Error(`unrecognised prompt: ${prompt}`)
 }
