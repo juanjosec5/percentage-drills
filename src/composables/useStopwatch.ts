@@ -27,9 +27,14 @@ export function useStopwatch() {
     return ms.value
   }
 
-  onBeforeUnmount(() => cancelAnimationFrame(frame))
+  /** Stops the clock without a result: the time is thrown away. */
+  function cancel() {
+    cancelAnimationFrame(frame)
+  }
 
-  return { ms, start, stop }
+  onBeforeUnmount(cancel)
+
+  return { ms, start, stop, cancel }
 }
 
 /** "1.2s" / "1,2 s", once translated. */

@@ -21,40 +21,74 @@ interface Day {
   daily: number
 }
 
-interface Saved {
+export interface Settings {
+  /** Show the running clock while answering. Timing and mastery are the same either way. */
+  showTimer: boolean
+}
+
+export interface Saved {
   unlocked: number
   history: Record<string, Answer[]>
   days: Record<string, Day>
+  settings: Settings
 }
+
+const DEFAULT_SETTINGS: Settings = { showTimer: true }
 
 export function dayKey(d = new Date()): string {
   return d.toLocaleDateString('sv') // YYYY-MM-DD in local time
 }
 
+const isObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/**
+ * Accepts whatever was stored and fills missing or invalid fields from defaults, so a partial
+ * or older save (before settings existed) can't leave the app with `unlocked: NaN`.
+ */
+export function normalize(raw: unknown): Saved {
+  const s = isObject(raw) ? raw : {}
+  const unlocked = Number.isInteger(s.unlocked) ? (s.unlocked as number) : 0
+  const settings = isObject(s.settings) ? s.settings : {}
+  return {
+    unlocked: Math.min(Math.max(unlocked, 0), LEVELS.length - 1),
+    history: isObject(s.history) ? (s.history as Saved['history']) : {},
+    days: isObject(s.days) ? (s.days as Saved['days']) : {},
+    settings: {
+      showTimer:
+        typeof settings.showTimer === 'boolean' ? settings.showTimer : DEFAULT_SETTINGS.showTimer,
+    },
+  }
+}
+
 function load(): Saved {
   try {
     const raw = localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw) as Saved
+    if (raw) return normalize(JSON.parse(raw))
   } catch {
     // Private mode or corrupt data: start fresh.
   }
-  return { unlocked: 0, history: {}, days: {} }
+  return normalize(null)
 }
 
 export const useProgress = defineStore('progress', () => {
   const saved = load()
-  const unlocked = ref(Math.min(saved.unlocked, LEVELS.length - 1))
+  const unlocked = ref(saved.unlocked)
   const history = ref(saved.history)
   const days = ref(saved.days)
+  const settings = ref(saved.settings)
 
   watch(
-    [unlocked, history, days],
+    [unlocked, history, days, settings],
     () => {
       try {
-        localStorage.setItem(
-          KEY,
-          JSON.stringify({ unlocked: unlocked.value, history: history.value, days: days.value }),
-        )
+        const data: Saved = {
+          unlocked: unlocked.value,
+          history: history.value,
+          days: days.value,
+          settings: settings.value,
+        }
+        localStorage.setItem(KEY, JSON.stringify(data))
       } catch {
         // Storage full or blocked: progress just won't persist this session.
       }
@@ -114,6 +148,11 @@ export const useProgress = defineStore('progress', () => {
     return false
   }
 
+  function setShowTimer(show: boolean) {
+    settings.value.showTimer = show
+  }
+
+  /** Erases progress; settings are preferences, not progress, so they stay. */
   function reset() {
     unlocked.value = 0
     history.value = {}
@@ -124,12 +163,14 @@ export const useProgress = defineStore('progress', () => {
     unlocked,
     history,
     days,
+    settings,
     today,
     dailyDone,
     streak,
     allMastered,
     statusOf,
     record,
+    setShowTimer,
     reset,
   }
 })
