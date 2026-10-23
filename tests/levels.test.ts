@@ -51,7 +51,8 @@ describe.each(LEVELS.map((level, i) => [level.id, level, i] as const))('level %s
 
   it('fills every placeholder in both languages', () => {
     for (const lang of LOCALES) {
-      for (const m of [level.title, level.strategy, ...problems.flatMap(texts)]) {
+      const tip = level.strategy ? [level.strategy] : []
+      for (const m of [level.title, ...tip, ...problems.flatMap(texts)]) {
         expect(translate(lang, m)).not.toMatch(/[{}]/)
       }
     }

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // The last WINDOW answers at a level as pips, and how few more right answers could finish it:
-// a goal close enough to see pulls harder than a percentage.
+// a goal close enough to see pulls harder than a percentage. The pips teach the rule, so there
+// is no legend.
 import { computed } from 'vue'
 
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
-import { answersToMastery, summarize, WINDOW } from '@/engine/mastery'
+import { answersToMastery, WINDOW } from '@/engine/mastery'
 import { useProgress } from '@/stores/progress'
 
 const props = defineProps<{ levelIndex: number; compact?: boolean }>()
@@ -14,7 +15,6 @@ const progress = useProgress()
 
 const level = computed(() => LEVELS[props.levelIndex])
 const recent = computed(() => (progress.history[level.value.id] ?? []).slice(-WINDOW))
-const status = computed(() => progress.statusOf(props.levelIndex))
 const toGo = computed(() => answersToMastery(level.value, recent.value))
 const right = computed(() => recent.value.filter((a) => a.correct).length)
 
@@ -38,44 +38,24 @@ const PIP_MARK: Record<Pip, string> = { fast: '✓', slow: '✓', wrong: '✗', 
 </script>
 
 <template>
-  <!-- Spans only: on Home this sits inside the level card's button. -->
-  <span :class="compact ? 'flex items-center gap-2' : 'mt-2 block space-y-1.5'">
+  <!-- Spans only: on Home this sits inside the level row's button. -->
+  <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
     <span
       class="flex gap-1"
       role="img"
-      :aria-label="t('meter.label', { right, wrong: recent.length - right })"
-      :title="t('meter.legend')"
+      :aria-label="t('meter.label', { window: WINDOW, right, wrong: recent.length - right })"
     >
       <span
         v-for="(pip, i) in pips"
         :key="i"
         class="flex items-center justify-center rounded-full text-[10px] leading-none font-bold"
-        :class="[PIP_CLASS[pip], compact ? 'size-3.5' : 'size-5']"
+        :class="[PIP_CLASS[pip], compact ? 'size-3.5' : 'size-4']"
         aria-hidden="true"
         >{{ compact ? '' : PIP_MARK[pip] }}</span
       >
     </span>
-    <span v-if="compact" class="text-xs whitespace-nowrap text-ink-muted">
+    <span class="text-xs whitespace-nowrap text-ink-muted">
       {{ t('meter.toGoShort', { n: toGo }) }}
     </span>
-    <template v-else>
-      <span class="block text-sm font-medium text-ink">
-        {{
-          recent.length
-            ? t('meter.toGo', { n: toGo, target: level.targetSeconds })
-            : t('meter.start', { window: WINDOW, target: level.targetSeconds })
-        }}
-      </span>
-      <span v-if="recent.length" class="block font-mono text-xs text-ink-muted">
-        {{
-          t('home.status', {
-            answered: status.answered,
-            window: WINDOW,
-            summary: summarize(status),
-            target: level.targetSeconds,
-          })
-        }}
-      </span>
-    </template>
   </span>
 </template>

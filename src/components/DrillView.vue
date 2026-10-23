@@ -1,18 +1,21 @@
 <script setup lang="ts">
-// One problem at a time, timed. After each answer: right or wrong, the time, and a visual
-// breakdown. Daily mode stops after the day's set; endless mode keeps going until you stop.
+// One problem at a time, timed. After a right answer, just the verdict; after a wrong one, the
+// correct answer and a visual breakdown. Daily mode stops after the day's set; endless mode keeps
+// going until you stop.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
 import LevelCompleteDialog from './LevelCompleteDialog.vue'
 import MasteryMeter from './MasteryMeter.vue'
+import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
-import { fmt, isCorrect, parseAnswer } from '@/engine/math'
+import { isCorrect, parseAnswer } from '@/engine/math'
 import { type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
+import type { Msg } from '@/i18n'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
 const props = defineProps<{ mode: Mode; startLevel: number }>()
@@ -23,7 +26,7 @@ type Phase = 'asking' | 'feedback' | 'done'
 const progress = useProgress()
 const rng = createRng()
 const clock = useStopwatch()
-const { locale, t } = useI18n()
+const { t } = useI18n()
 
 const level = ref(props.startLevel)
 const problem = ref<Problem>()
@@ -35,37 +38,28 @@ const phase = ref<Phase>('asking')
 const wasCorrect = ref(false)
 /** Set when the problem is asked, so a level-up mid-problem doesn't relabel it as review. */
 const reviewing = ref(false)
+/** The level's tip, on its first problem only: the one moment it helps before answering. */
+const tip = ref<Msg>()
 /** The level just mastered, while its popup is open. */
 const finished = ref<number | null>(null)
 const session = ref<Answer[]>([])
 /** The last problem was dropped because the page was hidden mid-answer. */
 const voided = ref(false)
 let leftMidProblem = false
-/** "Speed still counts" shows once per session, the first time the hidden timer is revealed. */
-const speedNote = ref(false)
-let speedNoteSeen = false
 
 const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
 const homeEl = ref<HTMLButtonElement>()
 
-const current = computed(() => LEVELS[level.value])
-/** The level this problem came from: the current one, or an earlier one for review. */
-const asked = computed(() => LEVELS[problemLevel.value])
 const canSubmit = computed(() => parseAnswer(input.value) !== null)
 const invalid = computed(() => input.value.trim() !== '' && !canSubmit.value)
-// The target is on screen from the start, so the clock reads as a goal rather than a threat.
-const timeLine = computed(() => {
-  const target = asked.value.targetSeconds
-  if (phase.value === 'asking' && !progress.settings.showTimer)
-    return t('drill.timeHidden', { target })
-  return t('drill.time', { time: seconds(clock.ms.value), target })
-})
+// With the timer off nothing ticks while answering; the time still shows once it's answered.
+const showTime = computed(() => progress.settings.showTimer || phase.value !== 'asking')
 const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))
 
 const sessionCorrect = computed(() => session.value.filter((a) => a.correct).length)
-// A plain average for the session header: it is labelled "average". Mastery itself still uses
-// the median, so one interrupted answer can't block a level.
+// A plain average for the session header: it is labelled "avg". Mastery itself still uses the
+// median, so one interrupted answer can't block a level.
 const sessionAverage = computed(() =>
   session.value.length ? session.value.reduce((sum, a) => sum + a.ms, 0) / session.value.length : 0,
 )
@@ -92,6 +86,10 @@ function ask() {
   serial.value++
   problemLevel.value = next.levelIndex
   reviewing.value = next.levelIndex !== level.value
+  tip.value =
+    !reviewing.value && progress.statusOf(level.value).answered === 0
+      ? LEVELS[level.value].strategy
+      : undefined
   input.value = ''
   phase.value = 'asking'
   clock.start()
@@ -102,8 +100,6 @@ function submit() {
   if (phase.value !== 'asking' || !problem.value || !canSubmit.value) return
   const ms = clock.stop()
   voided.value = false
-  speedNote.value = !progress.settings.showTimer && !speedNoteSeen
-  speedNoteSeen ||= speedNote.value
   wasCorrect.value = isCorrect(input.value, problem.value.answer)
   session.value.push({ correct: wasCorrect.value, ms })
   phase.value = 'feedback'
@@ -148,145 +144,148 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl space-y-5 px-4 py-6">
-    <header class="flex items-center justify-between gap-3">
-      <button
-        class="shrink-0 text-sm whitespace-nowrap text-ink-muted hover:text-ink"
-        @click="emit('exit')"
-      >
-        {{ t('drill.back') }}
-      </button>
-      <div class="flex items-center gap-3">
-        <p class="text-right text-sm text-ink-muted">
-          <span v-if="mode === 'daily'">{{
-            t('drill.daily', { done: dailyAnswered, total: DAILY_COUNT })
-          }}</span>
-          <span v-else>{{
-            t('drill.endless', { right: sessionCorrect, total: session.length })
-          }}</span>
-          <span v-if="session.length">{{
-            t('drill.average', { time: seconds(sessionAverage) })
-          }}</span>
-        </p>
+  <div class="mx-auto max-w-xl space-y-4 px-4 py-6">
+    <header class="space-y-3">
+      <div class="flex items-center gap-2">
+        <button
+          class="icon-btn mr-auto text-xl"
+          :aria-label="t('drill.back')"
+          :title="t('drill.back')"
+          @click="emit('exit')"
+        >
+          <span aria-hidden="true">←</span>
+        </button>
         <LanguageToggle />
+        <!-- Struck through and dimmed when off, so the state reads without a label. -->
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="progress.settings.showTimer"
+          :aria-label="t('drill.timer')"
+          :title="t('drill.timer')"
+          class="icon-btn relative text-lg"
+          :class="progress.settings.showTimer ? 'border-line bg-panel shadow-soft' : 'opacity-45'"
+          @click="progress.setShowTimer(!progress.settings.showTimer)"
+        >
+          <span aria-hidden="true">⏱</span>
+          <span
+            v-if="!progress.settings.showTimer"
+            class="absolute h-0.5 w-7 rotate-45 rounded-full bg-ink"
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div
+          class="h-1.5 flex-1 overflow-hidden rounded-full bg-line/70 shadow-press"
+          role="progressbar"
+          :aria-label="t(mode === 'daily' ? 'drill.progressDaily' : 'drill.progressEndless')"
+          aria-valuemin="0"
+          :aria-valuemax="DAILY_COUNT"
+          :aria-valuenow="progressDone"
+        >
+          <div
+            class="rainbow h-full animate-rainbow rounded-full transition-[width] duration-500 ease-out"
+            :style="{ width: `${(progressDone / DAILY_COUNT) * 100}%` }"
+          />
+        </div>
+        <p class="shrink-0 text-sm whitespace-nowrap text-ink-muted tabular-nums">
+          <template v-if="mode === 'daily'">{{ dailyAnswered }}/{{ DAILY_COUNT }}</template>
+          <template v-else-if="session.length"
+            >✓ {{ sessionCorrect }}/{{ session.length }}</template
+          >
+          <template v-if="session.length">
+            · {{ t('drill.average', { time: seconds(sessionAverage) }) }}</template
+          >
+        </p>
       </div>
     </header>
 
-    <div
-      class="h-1.5 overflow-hidden rounded-full bg-line/70 shadow-press"
-      role="progressbar"
-      :aria-label="t(mode === 'daily' ? 'drill.progressDaily' : 'drill.progressEndless')"
-      aria-valuemin="0"
-      :aria-valuemax="DAILY_COUNT"
-      :aria-valuenow="progressDone"
-    >
-      <div
-        class="rainbow h-full animate-rainbow rounded-full transition-[width] duration-500 ease-out"
-        :style="{ width: `${(progressDone / DAILY_COUNT) * 100}%` }"
+    <p class="sr-only" aria-live="polite">{{ announcement }}</p>
+
+    <div v-if="phase !== 'done'" class="flex items-center gap-3">
+      <p class="text-xs font-medium whitespace-nowrap text-ink-muted">
+        {{ t('drill.level', { n: level + 1 }) }}
+      </p>
+      <!-- Tracks the level being climbed; review answers don't move it, so it dims for them. -->
+      <MasteryMeter
+        v-if="level === progress.unlocked && !progress.allMastered"
+        :level-index="level"
+        compact
+        class="transition-opacity"
+        :class="{ 'opacity-50': reviewing }"
       />
     </div>
 
-    <p class="sr-only" aria-live="polite">{{ announcement }}</p>
-
-    <div v-if="phase !== 'done'" class="flex items-start justify-between gap-3">
-      <p class="text-xs tracking-wide text-ink-muted uppercase">
-        {{ t('drill.level', { n: level + 1, title: current.title }) }}
-        <span v-if="reviewing">{{ t('drill.review', { title: asked.title }) }}</span>
-      </p>
-      <button
-        type="button"
-        role="switch"
-        :aria-checked="progress.settings.showTimer"
-        class="shrink-0 text-xs whitespace-nowrap text-ink-muted underline-offset-4 hover:text-ink hover:underline"
-        @click="progress.setShowTimer(!progress.settings.showTimer)"
-      >
-        {{ t(progress.settings.showTimer ? 'drill.timerOn' : 'drill.timerOff') }}
-      </button>
-    </div>
-
-    <!-- Tracks the level being climbed; review answers from earlier levels don't move it. -->
-    <MasteryMeter
-      v-if="phase !== 'done' && level === progress.unlocked && !progress.allMastered"
-      :level-index="level"
-      compact
-    />
-
     <p v-if="voided" class="text-sm text-ink-muted" role="status">{{ t('drill.voided') }}</p>
 
-    <template v-if="phase !== 'done' && problem">
-      <section
-        class="card space-y-5 text-center"
-        :class="{ 'animate-glow': phase === 'feedback' && wasCorrect }"
-      >
-        <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
-        <!-- Stays grey after answering: the verdict line alone carries right/wrong. -->
-        <p
-          class="text-ink-muted tabular-nums"
-          :class="
-            phase === 'asking' && !progress.settings.showTimer ? 'text-base' : 'font-mono text-lg'
-          "
-        >
-          {{ timeLine }}
+    <section
+      v-if="phase !== 'done' && problem"
+      class="card space-y-5 text-center"
+      :class="{ 'animate-glow': phase === 'feedback' && wasCorrect }"
+    >
+      <p v-if="tip" class="font-mono text-sm text-ink-muted">{{ t(tip) }}</p>
+      <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
+      <!-- Stays grey after answering: the verdict line alone carries right/wrong. -->
+      <p v-if="showTime" class="font-mono text-lg text-ink-muted tabular-nums">
+        {{ t(seconds(clock.ms.value)) }}
+      </p>
+
+      <form v-if="phase === 'asking'" class="space-y-2" @submit.prevent="submit">
+        <div class="flex gap-2">
+          <input
+            ref="inputEl"
+            v-model="input"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="?"
+            enterkeyhint="done"
+            :aria-label="t('drill.answer')"
+            :aria-invalid="invalid"
+            aria-describedby="answer-hint"
+            class="well min-w-0 flex-1 rounded-lg border-ink-muted/80 px-4 py-3 text-center font-mono text-2xl outline-none focus:border-ink"
+          />
+          <button class="btn btn-primary" :disabled="!canSubmit">
+            {{ t('drill.check') }}
+          </button>
+        </div>
+        <p id="answer-hint" class="min-h-5 text-sm text-wrong">
+          {{ invalid ? t('drill.invalid') : '' }}
         </p>
+      </form>
 
-        <form v-if="phase === 'asking'" class="space-y-2" @submit.prevent="submit">
-          <div class="flex gap-2">
-            <input
-              ref="inputEl"
-              v-model="input"
-              inputmode="decimal"
-              autocomplete="off"
-              :placeholder="t('drill.answer')"
-              enterkeyhint="done"
-              :aria-label="t('drill.answer')"
-              :aria-invalid="invalid"
-              aria-describedby="answer-hint"
-              class="well min-w-0 flex-1 rounded-lg border-ink-muted/80 px-4 py-3 text-center font-mono text-2xl outline-none focus:border-ink"
-            />
-            <button class="btn btn-primary" :disabled="!canSubmit">
-              {{ t('drill.check') }}
-            </button>
-          </div>
-          <p id="answer-hint" class="min-h-5 text-sm text-wrong">
-            {{ invalid ? t('drill.invalid', { example: fmt(12.5, locale) }) : '' }}
-          </p>
-        </form>
-
-        <div v-else class="animate-pop space-y-1">
+      <template v-else>
+        <div class="animate-pop space-y-1">
           <p class="text-xl font-semibold" :class="verdictClass">
             <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
           </p>
-          <p v-if="!wasCorrect" class="text-sm text-ink-muted">
-            {{ t('drill.youAnswered', { input }) }}
+          <p v-if="!wasCorrect" class="font-mono text-ink-muted">
+            <s aria-hidden="true">{{ input }}</s>
+            <span class="sr-only">{{ t('drill.youAnswered', { input }) }}</span>
           </p>
-          <p v-if="speedNote" class="text-sm text-ink-muted">{{ t('drill.speedCounts') }}</p>
         </div>
-      </section>
-
-      <section v-if="phase === 'feedback'" class="card space-y-4">
-        <BreakdownBar :key="serial" :breakdown="problem.breakdown" />
+        <!-- Teaching is for mistakes: a right answer goes straight to Next. -->
+        <BreakdownBar
+          v-if="!wasCorrect"
+          :key="serial"
+          :breakdown="problem.breakdown"
+          class="text-left"
+        />
         <button ref="nextEl" class="btn btn-primary w-full" @click="next">
-          {{ t(dailySetDone ? 'drill.finish' : 'drill.next') }}
+          {{ t('drill.next') }}
           <span class="ml-1" aria-hidden="true">⏎</span>
         </button>
-      </section>
-    </template>
+      </template>
+    </section>
 
     <section v-else-if="phase === 'done'" class="card animate-pop space-y-3 text-center">
       <p class="text-2xl font-semibold">{{ t('drill.dailyDone') }}</p>
       <div class="rainbow mx-auto h-1.5 w-24 animate-rainbow rounded-full" />
       <p class="text-ink-muted">
-        {{
-          t('drill.session', {
-            right: sessionCorrect,
-            total: session.length,
-            time: seconds(sessionAverage),
-          })
-        }}
+        {{ t('drill.session', { right: sessionCorrect, total: session.length }) }}
       </p>
-      <p class="text-ink-muted">
-        {{ t('drill.streak', { n: progress.streak }) }}
-      </p>
+      <StreakChip v-if="progress.streak" :days="progress.streak" />
       <button ref="homeEl" class="btn btn-primary w-full" @click="emit('exit')">
         {{ t('drill.home') }}
       </button>

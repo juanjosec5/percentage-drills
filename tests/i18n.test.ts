@@ -21,8 +21,9 @@ describe('dictionaries', () => {
 
   it('use the same placeholders in both languages', () => {
     for (const [key, entry] of Object.entries(en)) {
-      if (typeof entry !== 'string') continue
-      expect(placeholders(es[key as keyof typeof en] as string), key).toEqual(placeholders(entry))
+      const want = placeholders(templates(entry)[0])
+      for (const t of templates(es[key as keyof typeof en]))
+        expect(placeholders(t), key).toEqual(want)
     }
   })
 })
@@ -39,14 +40,15 @@ describe('translate', () => {
   it('translates nested messages and joins lists', () => {
     const how = msg('how.half')
     const step = msg('step.pieceOf', { pct: 50, base: 7, value: 3.5, how })
-    expect(translate('es', step)).toBe('50 % de 7 = 3,5 · la mitad')
+    expect(translate('es', step)).toBe('50 % de 7 = 3,5 · ÷ 2')
     const sum = msg('result.sum', { pct: 15, sum: [7, ' + ', 3.5], answer: 10.5 })
     expect(translate('en', sum)).toBe('15% = 7 + 3.5 = 10.5')
   })
 
   it('picks plural forms', () => {
-    expect(translate('en', msg('drill.streak', { n: 1 }))).toBe('Streak: 1 day')
-    expect(translate('es', msg('drill.streak', { n: 3 }))).toBe('Racha: 3 días')
+    expect(translate('en', msg('streak.aria', { n: 1 }))).toBe('1-day streak')
+    expect(translate('es', msg('streak.aria', { n: 1 }))).toBe('Racha de 1 día')
+    expect(translate('es', msg('streak.aria', { n: 3 }))).toBe('Racha de 3 días')
   })
 })
 
