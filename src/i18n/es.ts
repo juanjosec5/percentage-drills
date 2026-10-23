@@ -13,7 +13,7 @@ export const es: Dictionary = {
   'mastery.summary': '{accuracy} % de aciertos · tiempo típico {median:1} s',
 
   'home.start': 'Empezar nivel {n}',
-  'home.continue': 'Seguir con el nivel {n}',
+  'home.continue': 'Continuar el nivel {n}',
   'home.allMastered': 'Dominaste todos los niveles ★',
   'home.dailyLeft': plural('el último problema de hoy', 'los {n} problemas de hoy'),
   'home.endless': 'práctica libre',
@@ -21,11 +21,12 @@ export const es: Dictionary = {
   'home.dailyDone': 'listo por hoy ✓',
   'home.endlessLink': 'Práctica libre →',
   'home.streak': 'días de racha',
+  'home.restDay': 'Faltaste el {day} y tu racha siguió. Tienes un día de descanso por semana.',
   'home.rightToday': 'aciertos hoy',
   'home.fastestToday': 'mejor tiempo hoy',
   'home.levels': 'Niveles',
   'home.rule':
-    'Subes de nivel cuando tus últimas {window} respuestas en un nivel tienen un {accuracy} % de aciertos y van por debajo del tiempo meta. Cerca de un tercio de los problemas repasa niveles anteriores.',
+    'Subes de nivel cuando tus últimas {window} respuestas en un nivel tienen un {accuracy} % de aciertos y van por debajo del tiempo meta. Cerca de un tercio de los problemas repasa niveles anteriores. Con {daily} respuestas en un día mantienes tu racha, y tienes un día de descanso por semana.',
   'meter.start': 'Responde {window} para terminar este nivel · meta {target} s cada una',
   'meter.toGo': plural(
     '{n} respuesta correcta más en {target} s o menos podría terminar este nivel',

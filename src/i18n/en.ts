@@ -21,11 +21,12 @@ export const en = {
   'home.dailyDone': 'done for today ✓',
   'home.endlessLink': 'Endless practice →',
   'home.streak': 'day streak',
+  'home.restDay': 'You missed {day} and your streak kept going. One rest day a week is built in.',
   'home.rightToday': 'right today',
   'home.fastestToday': 'fastest today',
   'home.levels': 'Levels',
   'home.rule':
-    'Move up when your last {window} answers at a level are {accuracy}% right and under the target time. About a third of problems review earlier levels.',
+    'Move up when your last {window} answers at a level are {accuracy}% right and under the target time. About a third of problems review earlier levels. Any {daily} answers in a day keep your streak, and one rest day a week is built in.',
   'meter.start': 'Answer {window} to finish this level · target {target}s each',
   'meter.toGo': plural(
     '{n} more right answer within {target}s could finish this level',

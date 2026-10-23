@@ -7,17 +7,27 @@ import { useI18n } from '@/composables/useI18n'
 import { seconds } from '@/composables/useStopwatch'
 import { LEVELS } from '@/engine/levels'
 import { PASS_ACCURACY, WINDOW } from '@/engine/mastery'
+import { dateOf, REST_GAP } from '@/engine/streak'
 import { msg } from '@/i18n'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
 const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
 const progress = useProgress()
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
-// The main button: today's daily set first (it keeps the streak), endless practice after.
+// The main button: today's daily set first, endless practice after.
 const ctaMode = computed<Mode>(() => (progress.dailyDone ? 'endless' : 'daily'))
 const currentStatus = computed(() => progress.statusOf(progress.unlocked))
 const isNewLevel = computed(() => currentStatus.value.answered === 0)
+// Say so plainly when the streak survived a missed day this past week, naming the weekday.
+const recentRestDay = computed(() => {
+  const key = progress.streakInfo.restDays[0]
+  if (!key) return ''
+  const day = dateOf(key)
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - REST_GAP)
+  return day > weekAgo ? new Intl.DateTimeFormat(locale.value, { weekday: 'long' }).format(day) : ''
+})
 const dailyLeft = computed(() => Math.max(0, DAILY_COUNT - progress.today.daily))
 const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
 const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
@@ -98,10 +108,14 @@ function confirmReset() {
       </div>
     </section>
 
+    <p v-if="recentRestDay" class="-mt-2 text-sm text-ink-muted">
+      {{ t('home.restDay', { day: recentRestDay }) }}
+    </p>
+
     <section class="space-y-2">
       <h2 class="font-semibold">{{ t('home.levels') }}</h2>
       <p class="text-sm text-ink-muted">
-        {{ t('home.rule', { window: WINDOW, accuracy: PASS_ACCURACY * 100 }) }}
+        {{ t('home.rule', { window: WINDOW, accuracy: PASS_ACCURACY * 100, daily: DAILY_COUNT }) }}
       </p>
       <ol class="space-y-2">
         <li v-for="(level, i) in LEVELS" :key="level.id">
