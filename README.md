@@ -40,7 +40,7 @@ src/
   engine/       Pure TypeScript, no Vue: level generators, math, grading, mastery rule
   stores/       Pinia store for progress (localStorage)
   composables/  Stopwatch
-  components/   HomeView, DrillView, BreakdownBar
+  components/   HomeView, DrillView, BreakdownBar, LevelCompleteDialog
 tests/          Vitest tests for the engine
 ```
 

@@ -16,6 +16,8 @@ const pos = (pct: number) => `${(pct / props.breakdown.scale) * 100}%`
 
 /** Number of --rainbow-N colour tokens in style.css. */
 const RAINBOW = 6
+/** Segments narrower than this share of the bar are too thin for a label (the tooltip still has it). */
+const LABEL_MIN_SHARE = 0.08
 
 function fill(seg: Segment, i: number): string {
   if (seg.kind === 'base') return 'rgb(var(--palette-line))'
@@ -34,9 +36,7 @@ const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 },
 <template>
   <div class="space-y-4">
     <div>
-      <div
-        class="relative h-10 overflow-hidden rounded-lg border border-line bg-ground shadow-press"
-      >
+      <div class="well relative h-10 overflow-hidden rounded-lg">
         <div
           v-for="t in ticks"
           :key="t"
@@ -56,7 +56,7 @@ const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 },
           }"
           :title="seg.label"
         >
-          <span v-if="(seg.to - seg.from) / breakdown.scale >= 0.08" class="px-1">{{
+          <span v-if="(seg.to - seg.from) / breakdown.scale >= LABEL_MIN_SHARE" class="px-1">{{
             seg.label
           }}</span>
         </div>

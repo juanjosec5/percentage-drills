@@ -39,3 +39,8 @@ export function mastery(level: Level, recent: Answer[]): MasteryStatus {
     medianSeconds,
   }
 }
+
+/** "90% right · median 3.2s": how a level is going, as shown on its card and in the popup. */
+export function summarize(status: MasteryStatus): string {
+  return `${Math.round(status.accuracy * 100)}% right · median ${status.medianSeconds.toFixed(1)}s`
+}
