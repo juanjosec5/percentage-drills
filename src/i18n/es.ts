@@ -6,11 +6,11 @@ const plural = (one: string, many: string) => (p: Record<string, unknown>) =>
   p.n === 1 ? one : many
 
 export const es: Dictionary = {
-  'app.title': 'Práctica de porcentajes',
+  'app.title': 'Percent Drills',
   'app.tagline': 'Unos cuantos porcentajes rápidos al día, paso a paso.',
   'lang.label': 'Idioma',
   seconds: '{s:1} s',
-  'mastery.summary': '{accuracy} % de aciertos · mediana {median:1} s',
+  'mastery.summary': '{accuracy} % de aciertos · tiempo típico {median:1} s',
 
   'home.start': 'Empezar nivel {n}',
   'home.continue': 'Seguir con el nivel {n}',
@@ -36,7 +36,7 @@ export const es: Dictionary = {
   'drill.back': '← Volver',
   'drill.daily': 'Reto diario · {done}/{total}',
   'drill.endless': 'Libre · {right}/{total} bien',
-  'drill.median': ' · mediana {time}',
+  'drill.median': ' · típico {time}',
   'drill.progressDaily': 'Reto diario',
   'drill.progressEndless': 'Esta ronda de diez',
   'drill.level': 'Nivel {n} · {title}',
@@ -51,7 +51,7 @@ export const es: Dictionary = {
   'drill.next': 'Siguiente',
   'drill.finish': 'Terminar',
   'drill.dailyDone': '¡Reto diario listo!',
-  'drill.session': 'Esta sesión: {right}/{total} bien · mediana de {time} por problema',
+  'drill.session': 'Esta sesión: {right}/{total} bien · tiempo típico de {time} por problema',
   'drill.streak': plural('Racha: {n} día', 'Racha: {n} días'),
   'drill.home': 'Volver al inicio',
 

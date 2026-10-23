@@ -1,4 +1,5 @@
 // English. The key set here defines what every other locale must translate.
+// "Typical time" is the median, not the mean: one interrupted answer must not block a level.
 import type { Entry } from './index'
 
 const plural = (one: string, many: string) => (p: Record<string, unknown>) =>
@@ -9,7 +10,7 @@ export const en = {
   'app.tagline': 'A few quick percentages a day, one small step at a time.',
   'lang.label': 'Language',
   seconds: '{s:1}s',
-  'mastery.summary': '{accuracy}% right · median {median:1}s',
+  'mastery.summary': '{accuracy}% right · typical time {median:1}s',
 
   'home.start': 'Start level {n}',
   'home.continue': 'Continue level {n}',
@@ -35,7 +36,7 @@ export const en = {
   'drill.back': '← Back',
   'drill.daily': 'Daily · {done}/{total}',
   'drill.endless': 'Endless · {right}/{total} right',
-  'drill.median': ' · median {time}',
+  'drill.median': ' · typical {time}',
   'drill.progressDaily': 'Daily set',
   'drill.progressEndless': 'This round of ten',
   'drill.level': 'Level {n} · {title}',
@@ -50,7 +51,7 @@ export const en = {
   'drill.next': 'Next',
   'drill.finish': 'Finish',
   'drill.dailyDone': 'Daily set done',
-  'drill.session': 'This session: {right}/{total} right · median {time} per problem',
+  'drill.session': 'This session: {right}/{total} right · typical time {time} per problem',
   'drill.streak': plural('Streak: {n} day', 'Streak: {n} days'),
   'drill.home': 'Back home',
 

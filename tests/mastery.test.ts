@@ -44,13 +44,13 @@ describe('mastery', () => {
 describe('summarize', () => {
   it('rounds accuracy to a whole percent and the median to a tenth of a second', () => {
     const recent = [...answers(8, true, 3240), ...answers(1, false, 3260)]
-    expect(translate('en', summarize(mastery(level, recent)))).toBe('89% right · median 3.2s')
+    expect(translate('en', summarize(mastery(level, recent)))).toBe('89% right · typical time 3.2s')
     expect(translate('es', summarize(mastery(level, recent)))).toBe(
-      '89 % de aciertos · mediana 3,2 s',
+      '89 % de aciertos · tiempo típico 3,2 s',
     )
   })
 
   it('reads 0% and 0.0s before any answers', () => {
-    expect(translate('en', summarize(mastery(level, [])))).toBe('0% right · median 0.0s')
+    expect(translate('en', summarize(mastery(level, [])))).toBe('0% right · typical time 0.0s')
   })
 })
