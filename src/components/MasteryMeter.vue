@@ -54,9 +54,9 @@ const PIP_MARK: Record<Pip, string> = { fast: '✓', slow: '✓', wrong: '✗', 
         v-for="(pip, i) in pips"
         :key="i"
         class="flex items-center justify-center rounded-full text-[10px] leading-none font-bold"
-        :class="[PIP_CLASS[pip], compact ? 'size-3.5' : 'size-4']"
+        :class="[PIP_CLASS[pip], compact ? 'size-3.5 text-[8px]' : 'size-4']"
         aria-hidden="true"
-        >{{ compact ? '' : PIP_MARK[pip] }}</span
+        >{{ PIP_MARK[pip] }}</span
       >
     </span>
     <span v-if="!hideCount" class="text-xs whitespace-nowrap text-ink-muted">
