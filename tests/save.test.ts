@@ -38,7 +38,12 @@ describe('versions', () => {
   })
 
   it('loads a v1 save unchanged, stamped with the current version', () => {
-    expect(normalize(structuredClone(V1))).toEqual({ ...V1, version: SAVE_VERSION, placedUpTo: 0 })
+    expect(normalize(structuredClone(V1))).toEqual({
+      ...V1,
+      version: SAVE_VERSION,
+      placedUpTo: 0,
+      settings: { ...V1.settings, offeredPlacement: false },
+    })
   })
 
   it('runs no steps on a current or newer save', () => {
@@ -46,7 +51,12 @@ describe('versions', () => {
     expect(migrate(current)).toBe(current)
     const newer = { ...V1, version: SAVE_VERSION + 1 }
     expect(migrate(newer)).toBe(newer)
-    expect(normalize(newer)).toEqual({ ...V1, version: SAVE_VERSION, placedUpTo: 0 })
+    expect(normalize(newer)).toEqual({
+      ...V1,
+      version: SAVE_VERSION,
+      placedUpTo: 0,
+      settings: { ...V1.settings, offeredPlacement: false },
+    })
   })
 })
 
@@ -109,7 +119,7 @@ describe('normalize: corrupt entries', () => {
       unlocked: 2,
       history: {},
       days: {},
-      settings: { showTimer: true },
+      settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,
     })
   })
@@ -122,7 +132,12 @@ describe('backups', () => {
   })
 
   it('imports a v1-shaped file too', () => {
-    expect(parseBackup(JSON.stringify(V1))).toEqual({ ...V1, version: SAVE_VERSION, placedUpTo: 0 })
+    expect(parseBackup(JSON.stringify(V1))).toEqual({
+      ...V1,
+      version: SAVE_VERSION,
+      placedUpTo: 0,
+      settings: { ...V1.settings, offeredPlacement: false },
+    })
   })
 
   it('cleans a hand-edited file instead of trusting it', () => {

@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-import { cta, input, open, promptEl, solve, stored } from './helpers'
+import { answer as answerDrill, cta, input, open, promptEl, solve, stored } from './helpers'
 
 type Page = import('@playwright/test').Page
 
-const skip = (page: Page) => page.getByRole('button', { name: 'Skip ahead →' })
+const skip = (page: Page) => page.getByRole('button', { name: 'Find my level · 5 questions' })
 
 /** Placement has no Next button: answering moves straight on, so wait for the prompt to change. */
 async function answer(page: Page, right: boolean) {
@@ -68,4 +68,36 @@ test('Back leaves without placing', async ({ page }) => {
   await page.getByRole('button', { name: 'Back' }).click()
   await expect(cta(page)).toContainText('Start level 1')
   await expect(skip(page)).toBeVisible()
+})
+
+test('three fast right answers at level 1 offer placement once, mid-drill', async ({ page }) => {
+  await open(page)
+  await cta(page).click()
+  const chip = page.getByRole('button', { name: 'Too easy? Find my level →' })
+  for (let i = 0; i < 2; i++) {
+    await answerDrill(page, true)
+    await expect(chip).toHaveCount(0)
+    await page.keyboard.press('Enter')
+  }
+  await answerDrill(page, true)
+  await expect(chip).toBeVisible()
+  expect((await stored(page)).settings.offeredPlacement).toBe(true)
+
+  await chip.click()
+  await expect(page.getByRole('img', { name: '1 of 5' })).toBeVisible()
+})
+
+test('the mid-drill offer never comes back once shown', async ({ page }) => {
+  await open(page, {
+    unlocked: 0,
+    history: {},
+    days: {},
+    settings: { showTimer: true, offeredPlacement: true },
+  })
+  await cta(page).click()
+  for (let i = 0; i < 4; i++) {
+    await answerDrill(page, true)
+    await expect(page.getByRole('button', { name: /Too easy/ })).toHaveCount(0)
+    await page.keyboard.press('Enter')
+  }
 })

@@ -109,24 +109,24 @@ const OPEN_DELAY_MS = 1100
       @click="emit('start', ctaMode, progress.unlocked)"
     />
 
-    <div class="-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
-      <!-- Once the set is done the main button already starts endless practice. -->
-      <button
-        v-if="!progress.dailyDone"
-        class="underline-offset-4 hover:text-ink hover:underline"
-        @click="emit('start', 'endless', progress.unlocked)"
-      >
-        {{ t('home.endlessLink') }}
-      </button>
-      <!-- Offered, never forced: the default stays Kumon's, start at the easy level. -->
-      <button
-        v-if="progress.canPlace"
-        class="underline-offset-4 hover:text-ink hover:underline"
-        @click="emit('place')"
-      >
-        {{ t('home.skipAhead') }}
-      </button>
-    </div>
+    <!-- Offered, never forced: outlined so it can't outrank Start, and gone after the first answer. -->
+    <button
+      v-if="progress.canPlace"
+      class="-mt-1 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-cta/40 px-4 font-semibold text-cta transition-colors hover:border-cta hover:bg-cta/5 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cta"
+      @click="emit('place')"
+    >
+      {{ t('home.findLevel') }}
+      <span aria-hidden="true">≫</span>
+    </button>
+
+    <!-- Once the set is done the main button already starts endless practice. -->
+    <button
+      v-if="!progress.dailyDone"
+      class="-mt-2 block text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+      @click="emit('start', 'endless', progress.unlocked)"
+    >
+      {{ t('home.endlessLink') }}
+    </button>
 
     <ol class="space-y-1" :aria-label="t('home.levels')">
       <li v-for="(level, i) in LEVELS" :key="level.id">

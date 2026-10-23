@@ -10,6 +10,11 @@ const progress = useProgress()
 const drill = ref<{ mode: Mode; level: number; key: number } | null>(null)
 const placing = ref(false)
 
+function placeFromDrill() {
+  drill.value = null
+  placing.value = true
+}
+
 function start(mode: Mode, level: number) {
   progress.justPlaced = false
   drill.value = { mode, level, key: Date.now() }
@@ -23,6 +28,7 @@ function start(mode: Mode, level: number) {
     :mode="drill.mode"
     :start-level="drill.level"
     @exit="drill = null"
+    @place="placeFromDrill"
   />
   <PlacementView v-else-if="placing" @done="placing = false" />
   <HomeView v-else @start="start" @place="placing = true" />
