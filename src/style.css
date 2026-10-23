@@ -148,7 +148,14 @@
 
 /* Charcoal on bone, with a rainbow glow underneath on hover. */
 @utility btn-primary {
-  @apply bg-ink text-ground shadow-soft enabled:hover:-translate-y-px enabled:active:translate-y-0 enabled:active:shadow-press;
+  @apply relative bg-ink text-ground shadow-soft enabled:hover:-translate-y-px enabled:active:translate-y-0 enabled:active:shadow-press;
+  /* The hover lift moves the bottom edge up 1px; this keeps the hit area there, so a pointer
+     resting on that edge doesn't flicker between hovered and not. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 -2px;
+  }
   &:enabled:hover {
     box-shadow:
       -6px 6px 16px -6px rgb(var(--rainbow-1) / 0.55),
