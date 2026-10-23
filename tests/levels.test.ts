@@ -31,7 +31,6 @@ describe.each(LEVELS.map((level, i) => [level.id, level, i] as const))('level %s
       expect(b.steps.length, p.prompt).toBeGreaterThan(0)
       for (const s of b.segments) {
         expect(s.from, p.prompt).toBeGreaterThanOrEqual(0)
-        expect(s.to, p.prompt).toBeLessThanOrEqual(b.scale)
         expect(s.to, p.prompt).toBeGreaterThan(s.from)
       }
       expect(b.result, p.prompt).toMatch(/[\d.]+%?$/)

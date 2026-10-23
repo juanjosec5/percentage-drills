@@ -52,6 +52,8 @@
   --animate-rainbow: rainbow-shift 6s linear infinite;
   --animate-glow: rainbow-glow 1.4s ease-out;
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
+  --animate-fade: fade 0.4s ease-out both;
 
   @keyframes rainbow-shift {
     to {
@@ -74,6 +76,11 @@
     }
     80% {
       box-shadow: 0 0 26px 6px rgb(var(--rainbow-6) / 0.4);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
     }
   }
   @keyframes pop {

@@ -15,8 +15,6 @@ export interface Segment {
 export interface Breakdown {
   /** The whole the bar stands for (100%). */
   base: number
-  /** How far the bar extends, in percent (above 100 for increases). */
-  scale: number
   segments: Segment[]
   /** Step-by-step lines, e.g. "10% of 70 = 7 · move the decimal". */
   steps: string[]
@@ -44,21 +42,21 @@ type Piece = { pct: number; sign: 1 | -1; how: string }
 
 /** pct% of base, built from pieces laid end to end on the bar (removals cut back from the end). */
 function built(pct: number, base: number, pieces: Piece[], prompt = `${pct}% of ${base}`): Problem {
+  const values = pieces.map((p) => fmt(percentOf(p.pct, base)))
   const segments: Segment[] = []
   let cursor = 0
-  for (const p of pieces) {
+  pieces.forEach((p, i) => {
     const from = p.sign > 0 ? cursor : cursor - p.pct
     const to = p.sign > 0 ? cursor + p.pct : cursor
     segments.push({
       from,
       to,
       kind: p.sign > 0 ? 'add' : 'remove',
-      label: `${p.sign > 0 ? '' : '−'}${p.pct}%`,
+      label: `${p.sign > 0 ? '' : '−'}${p.pct}% = ${values[i]}`,
     })
     cursor += p.sign * p.pct
-  }
+  })
   const answer = percentOf(pct, base)
-  const values = pieces.map((p) => fmt(percentOf(p.pct, base)))
   const sum =
     pieces.length > 1
       ? `${values.map((v, i) => (i ? (pieces[i].sign > 0 ? ' + ' : ' − ') + v : v)).join('')} = `
@@ -68,7 +66,6 @@ function built(pct: number, base: number, pieces: Piece[], prompt = `${pct}% of 
     answer,
     breakdown: {
       base,
-      scale: 100,
       segments,
       steps: pieces.map((p, i) => `${p.pct}% of ${base} = ${values[i]} · ${p.how}`),
       result: `${pct}% = ${sum}${fmt(answer)}`,
@@ -202,7 +199,6 @@ const LADDER: Level[] = [
         answer: pct,
         breakdown: {
           base: whole,
-          scale: 100,
           segments: [{ from: 0, to: pct, kind: 'part', label: fmt(part) }],
           steps: [`Write it as a fraction: ${fmt(part)} / ${whole}`, `Simplify: ${pct} / 100`],
           result: `${fmt(part)} is ${pct}% of ${whole}`,
@@ -226,12 +222,11 @@ const LADDER: Level[] = [
         answer,
         breakdown: {
           base: b,
-          scale: up ? 100 + pct : 100,
           segments: [
-            { from: 0, to: 100, kind: 'base', label: String(b) },
+            { from: 0, to: 100, kind: 'base', label: `${b} = 100%` },
             up
-              ? { from: 100, to: 100 + pct, kind: 'add', label: `+${delta}` }
-              : { from: 100 - pct, to: 100, kind: 'remove', label: `−${delta}` },
+              ? { from: 100, to: 100 + pct, kind: 'add', label: `+${pct}% = ${delta}` }
+              : { from: 100 - pct, to: 100, kind: 'remove', label: `−${pct}% = ${delta}` },
           ],
           steps: [`${pct}% of ${b} = ${delta}`],
           result: `${b} ${up ? '+' : '−'} ${delta} = ${fmt(answer)}`,

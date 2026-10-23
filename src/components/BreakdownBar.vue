@@ -1,23 +1,22 @@
 <script setup lang="ts">
-// Draws a problem's breakdown: a bar standing for the whole (100%), with each piece of the
-// calculation laid on it in turn, then the steps written out.
-import { onMounted, ref } from 'vue'
+// Draws a problem's breakdown: for multi-step problems, a bar made of the pieces of the
+// calculation, each with its value; then the steps written out.
+import { computed } from 'vue'
 
-import { fmt } from '@/engine/math'
 import type { Breakdown, Segment } from '@/engine/levels'
 
 const props = defineProps<{ breakdown: Breakdown }>()
-
-// Segments grow in one after another once mounted.
-const shown = ref(false)
-onMounted(() => requestAnimationFrame(() => (shown.value = true)))
-
-const pos = (pct: number) => `${(pct / props.breakdown.scale) * 100}%`
 
 /** --rainbow-N tokens for added pieces, in turn. Blue first: a red first piece reads as "wrong". */
 const ADD_COLORS = [5, 2, 4, 6, 3, 1]
 /** Segments narrower than this share of the bar are too thin for a label (the tooltip still has it). */
 const LABEL_MIN_SHARE = 0.08
+
+// A single piece adds nothing the steps don't say, and a lone slice on an empty track read as a
+// score. So the bar only appears when pieces combine, and it is always filled edge to edge.
+const showBar = computed(() => props.breakdown.segments.length > 1)
+const extent = computed(() => Math.max(...props.breakdown.segments.map((s) => s.to)))
+const pos = (pct: number) => `${(pct / extent.value) * 100}%`
 
 function fill(seg: Segment, i: number): string {
   if (seg.kind === 'base') return 'rgb(var(--palette-line))'
@@ -29,53 +28,52 @@ function fill(seg: Segment, i: number): string {
   return `rgb(var(--rainbow-${ADD_COLORS[adds.length % ADD_COLORS.length]}))`
 }
 
-// No 10% grid: ten cells with one filled looked like a progress bar. Only mark 100% when the
-// bar runs past it.
-const ticks = props.breakdown.scale > 100 ? [100] : []
+// Steps line up with the coloured pieces one to one in most levels; give each its piece's
+// colour then, so the bar and the written steps read as the same thing.
+const swatches = computed(() => {
+  const { segments, steps } = props.breakdown
+  const coloured = segments.flatMap((s, i) => (s.kind === 'base' ? [] : [fill(s, i)]))
+  return showBar.value && coloured.length === steps.length ? coloured : []
+})
 </script>
 
 <template>
   <div class="space-y-4">
-    <div>
-      <p class="mb-1.5 text-xs tracking-wide text-ink-muted uppercase">
-        How it works · each coloured piece is one step
-      </p>
-      <div class="well relative h-10 overflow-hidden rounded-lg">
-        <div
-          v-for="t in ticks"
-          :key="t"
-          class="absolute inset-y-0 w-px bg-ink-muted/40"
-          :style="{ left: pos(t) }"
-        />
-        <div
-          v-for="(seg, i) in breakdown.segments"
-          :key="i"
-          class="absolute inset-y-0 flex items-center justify-center overflow-hidden text-xs font-semibold whitespace-nowrap text-ink transition-all duration-500 ease-out"
-          :style="{
-            left: pos(seg.from),
-            width: shown ? pos(seg.to - seg.from) : '0%',
-            minWidth: shown ? '3px' : '0',
-            background: fill(seg, i),
-            transitionDelay: `${i * 350}ms`,
-          }"
-          :title="seg.label"
-        >
-          <span v-if="(seg.to - seg.from) / breakdown.scale >= LABEL_MIN_SHARE" class="px-1">{{
-            seg.label
-          }}</span>
-        </div>
-      </div>
-      <div class="relative mt-1 h-4 font-mono text-[11px] text-ink-muted">
-        <span class="absolute left-0">0</span>
-        <span class="absolute -translate-x-full whitespace-nowrap" :style="{ left: pos(100) }"
-          >{{ fmt(breakdown.base) }} = 100%</span
-        >
-        <span v-if="breakdown.scale > 100" class="absolute right-0">{{ breakdown.scale }}%</span>
+    <div
+      v-if="showBar"
+      class="well relative h-10 overflow-hidden rounded-lg"
+      role="img"
+      :aria-label="breakdown.segments.map((s) => s.label).join(', ')"
+    >
+      <div
+        v-for="(seg, i) in breakdown.segments"
+        :key="i"
+        class="absolute inset-y-0 flex animate-fade items-center justify-center overflow-hidden border-r border-panel text-xs font-semibold whitespace-nowrap text-ink last:border-r-0"
+        :style="{
+          left: pos(seg.from),
+          width: pos(seg.to - seg.from),
+          background: fill(seg, i),
+          animationDelay: `${i * 250}ms`,
+        }"
+        :class="{ 'justify-start! pl-2': seg.kind === 'base' }"
+        :title="seg.label"
+      >
+        <span v-if="(seg.to - seg.from) / extent >= LABEL_MIN_SHARE" class="px-1">{{
+          seg.label
+        }}</span>
       </div>
     </div>
 
     <ol class="space-y-1 font-mono text-sm text-ink-muted">
-      <li v-for="(step, i) in breakdown.steps" :key="i">{{ step }}</li>
+      <li v-for="(step, i) in breakdown.steps" :key="i" class="flex items-baseline gap-2">
+        <span
+          v-if="swatches[i]"
+          class="size-2.5 shrink-0 rounded-sm"
+          :style="{ background: swatches[i] }"
+          aria-hidden="true"
+        />
+        {{ step }}
+      </li>
     </ol>
     <p class="font-mono text-base font-semibold">{{ breakdown.result }}</p>
   </div>
