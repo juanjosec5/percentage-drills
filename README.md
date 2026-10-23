@@ -39,14 +39,21 @@ npm install
 npm run dev
 ```
 
-| Script            | What it does                        |
-| ----------------- | ----------------------------------- |
-| `npm run dev`     | Start the dev server                |
-| `npm run build`   | Type-check and build for production |
-| `npm run preview` | Serve the production build locally  |
-| `npm test`        | Run the unit tests (Vitest)         |
-| `npm run lint`    | Lint with ESLint                    |
-| `npm run format`  | Format with Prettier                |
+| Script             | What it does                                 |
+| ------------------ | -------------------------------------------- |
+| `npm run dev`      | Start the dev server                         |
+| `npm run build`    | Type-check and build for production          |
+| `npm run preview`  | Serve the production build locally           |
+| `npm test`         | Run the unit tests (Vitest)                  |
+| `npm run test:e2e` | Run the browser tests (Playwright, headless) |
+| `npm run lint`     | Lint with ESLint                             |
+| `npm run format`   | Format with Prettier                         |
+
+The browser tests start their own Vite server on a free port. Install the browsers once with
+`npx playwright install chromium webkit`. Each spec seeds `percent-drills:v1` and fixes the clock,
+which also fixes the problem sequence, so runs are repeatable. GitHub Actions
+(`.github/workflows/ci.yml`) runs the type-check, lint, unit tests, build and browser tests on
+every pull request and on pushes to `main`; a failed run uploads the Playwright report.
 
 ## Project layout
 
@@ -58,6 +65,7 @@ src/
   composables/  Stopwatch, current language
   components/   HomeView, DrillView, LiquidCta, BreakdownBar, MasteryMeter, …
 tests/          Vitest tests for the engine, the dictionaries and the copy limits
+e2e/            Playwright tests for the flows in a real browser (Chromium and WebKit)
 ```
 
 To add or tune a level, edit `src/engine/levels.ts`. Each level has a generator that returns the
@@ -70,4 +78,4 @@ and `src/i18n/es.ts`; a key missing from Spanish fails the type-check. `tests/co
 caps level titles and tips, and bans timing jargon ("typical", "target"), so text can't creep
 back.
 
-Stack: Vue 3, TypeScript, Vite, Pinia, Tailwind CSS v4, Vitest.
+Stack: Vue 3, TypeScript, Vite, Pinia, Tailwind CSS v4, Vitest, Playwright.
