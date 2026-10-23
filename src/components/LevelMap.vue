@@ -4,6 +4,7 @@
 // fixed heights, so the road behind the nodes is drawn from the same numbers as the layout.
 import { computed } from 'vue'
 
+import MascotDrop from './MascotDrop.vue'
 import MasteryMeter from './MasteryMeter.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
@@ -145,6 +146,13 @@ function segment(i: number): string {
               >🔒</span
             >
           </button>
+          <!-- The mascot waits beside the current node, on the side facing the middle. -->
+          <MascotDrop
+            v-if="isCurrent(i)"
+            :mood="i === props.justOpened ? 'cheer' : progress.dailyDone ? 'sleep' : 'idle'"
+            class="absolute top-3"
+            :class="nodes[i].x > 50 ? '-left-13' : '-right-13'"
+          />
         </div>
         <!-- Its own centred row: under a node near the edge it would run off the screen. -->
         <div

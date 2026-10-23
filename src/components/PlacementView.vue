@@ -5,6 +5,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import GroupedText from './GroupedText.vue'
+import MascotDrop from './MascotDrop.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import type { Problem } from '@/engine/levels'
@@ -136,6 +137,7 @@ onMounted(ask)
       class="card animate-pop space-y-2 text-center"
       role="status"
     >
+      <MascotDrop mood="cheer" :size="56" class="mx-auto" />
       <p class="text-lg font-semibold text-correct">
         <span aria-hidden="true">✓</span> {{ t(`world.${WORLDS[check].id}`) }}
       </p>
@@ -145,6 +147,7 @@ onMounted(ask)
     </section>
 
     <section v-else-if="phase === 'result'" class="card animate-pop space-y-4 text-center">
+      <MascotDrop :mood="moved ? 'cheer' : 'idle'" :size="64" class="mx-auto" />
       <p class="text-3xl font-bold text-cta">{{ t(`world.${resultWorld.id}`) }}</p>
       <p v-if="!moved" class="text-ink-muted">{{ t('placement.same') }}</p>
       <button ref="startEl" class="btn btn-primary w-full" @click="emit('done')">
@@ -171,10 +174,13 @@ onMounted(ask)
       </form>
       <template v-else>
         <div class="animate-pop space-y-1" role="status">
-          <p class="text-xl font-semibold" :class="last.correct ? 'text-correct' : 'text-wrong'">
-            <span aria-hidden="true">{{ last.correct ? '✓' : '✗' }}</span>
-            {{ last.correct ? t('drill.correct') : t('drill.wrong', { answer: problem.answer }) }}
-          </p>
+          <div class="flex items-center justify-center gap-2">
+            <MascotDrop :key="step" :mood="last.correct ? 'happy' : 'oops'" :size="30" />
+            <p class="text-xl font-semibold" :class="last.correct ? 'text-correct' : 'text-wrong'">
+              <span aria-hidden="true">{{ last.correct ? '✓' : '✗' }}</span>
+              {{ last.correct ? t('drill.correct') : t('drill.wrong', { answer: problem.answer }) }}
+            </p>
+          </div>
           <p v-if="last.slow" class="font-mono text-ink-muted tabular-nums">
             <span aria-hidden="true">⏱ </span>{{ t(seconds(last.ms)) }}
           </p>
