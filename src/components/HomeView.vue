@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
 import LiquidCta from './LiquidCta.vue'
@@ -8,7 +8,8 @@ import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
 import { answersToMastery, GOAL } from '@/engine/mastery'
-import { useProgress, type Mode } from '@/stores/progress'
+import { dayKey, useProgress, type Mode } from '@/stores/progress'
+import { backupName, parseBackup } from '@/stores/save'
 
 const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
 const progress = useProgress()
@@ -41,6 +42,37 @@ onMounted(() => ctaEl.value?.focus())
 
 function confirmReset() {
   if (confirm(t('home.resetConfirm'))) progress.reset()
+}
+
+// A backup is the save itself, so an exported file imports through the same checks as storage.
+function exportProgress() {
+  const blob = new Blob([JSON.stringify(progress.snapshot())], { type: 'application/json' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = backupName(dayKey())
+  link.click()
+  // Later, not now: Safari can drop a download whose URL is revoked in the same task.
+  setTimeout(() => URL.revokeObjectURL(link.href))
+}
+
+const fileEl = ref<HTMLInputElement>()
+
+async function importProgress(event: Event) {
+  const el = event.target as HTMLInputElement
+  const file = el.files?.[0]
+  // Cleared, so picking the same file again still fires change.
+  el.value = ''
+  if (!file) return
+  const saved = parseBackup(await file.text())
+  if (!saved) {
+    alert(t('home.importInvalid'))
+    return
+  }
+  if (!confirm(t('home.importConfirm'))) return
+  progress.restore(saved)
+  // Reload once it's saved, so Home starts clean instead of animating the jump as a level-up.
+  await nextTick()
+  location.reload()
 }
 </script>
 
@@ -124,8 +156,17 @@ const OPEN_DELAY_MS = 1100
       </li>
     </ol>
 
-    <button class="text-xs text-ink-muted underline" @click="confirmReset">
-      {{ t('home.reset') }}
-    </button>
+    <div class="flex gap-4 text-xs text-ink-muted [&>button]:underline">
+      <button @click="confirmReset">{{ t('home.reset') }}</button>
+      <button @click="exportProgress">{{ t('home.export') }}</button>
+      <button @click="fileEl?.click()">{{ t('home.import') }}</button>
+      <input
+        ref="fileEl"
+        type="file"
+        accept=".json,application/json"
+        class="hidden"
+        @change="importProgress"
+      />
+    </div>
   </div>
 </template>

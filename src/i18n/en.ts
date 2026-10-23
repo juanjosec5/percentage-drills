@@ -7,6 +7,8 @@ export const en = {
   'lang.label': 'Language',
   seconds: '{s:1}s',
   'streak.aria': '{n}-day streak',
+  'error.title': 'Something went wrong',
+  'error.reset': 'Reset',
 
   'home.start': 'Start level {n}',
   'home.continue': 'Continue level {n}',
@@ -17,6 +19,10 @@ export const en = {
   'home.locked': 'Locked',
   'home.reset': 'Reset progress',
   'home.resetConfirm': 'Erase all progress?',
+  'home.export': 'Export',
+  'home.import': 'Import',
+  'home.importConfirm': 'Replace your progress with this file?',
+  'home.importInvalid': 'Not a Percent Drills file',
 
   'drill.levelDone': '★ Level {n} complete!',
   'drill.reviewTag': '↺ review',
