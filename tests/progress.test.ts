@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 
 import { LEVELS } from '@/engine/levels'
 import { GOAL } from '@/engine/mastery'
+import { PLACEMENT_MAX } from '@/engine/placement'
 import { CONFIRM, DAILY_COUNT, normalize, useProgress } from '@/stores/progress'
 import { SAVE_VERSION } from '@/stores/save'
 
@@ -169,6 +170,15 @@ describe('placement', () => {
     expect(progress.today.answered).toBe(0)
     expect(progress.isPlaced(3)).toBe(true)
     expect(progress.isPlaced(4)).toBe(false)
+  })
+
+  it('stays on offer after answering, until it could no longer open a higher level', () => {
+    const progress = useProgress()
+    progress.record(0, fast(true), 'endless')
+    expect(progress.canPlace).toBe(true)
+    progress.place(PLACEMENT_MAX - 1)
+    expect(progress.canPlace).toBe(true)
+    progress.place(PLACEMENT_MAX)
     expect(progress.canPlace).toBe(false)
   })
 

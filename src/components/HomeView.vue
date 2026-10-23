@@ -109,7 +109,8 @@ const OPEN_DELAY_MS = 1100
       @click="emit('start', ctaMode, progress.unlocked)"
     />
 
-    <!-- Offered, never forced: outlined so it can't outrank Start, and gone after the first answer. -->
+    <!-- Offered, never forced: outlined so it can't outrank Start. Shown while it could still
+         open a higher level. -->
     <button
       v-if="progress.canPlace"
       class="group relative -mt-1 flex min-h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-cta/40 bg-white px-4 font-semibold text-cta transition-colors duration-300 hover:border-cta hover:text-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cta"
