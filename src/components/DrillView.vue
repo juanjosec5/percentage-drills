@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
+import MascotDrop from './MascotDrop.vue'
 import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
@@ -281,9 +282,12 @@ onBeforeUnmount(() => {
 
       <template v-else>
         <div class="animate-pop space-y-1">
-          <p class="text-xl font-semibold" :class="verdictClass">
-            <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
-          </p>
+          <div class="flex items-center justify-center gap-2">
+            <MascotDrop :key="serial" :mood="wasCorrect ? 'happy' : 'oops'" :size="30" />
+            <p class="text-xl font-semibold" :class="verdictClass">
+              <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
+            </p>
+          </div>
           <p v-if="finished !== null" class="animate-pop text-2xl font-bold text-cta">
             {{ t('drill.levelDone', { n: finished + 1 }) }}
           </p>
