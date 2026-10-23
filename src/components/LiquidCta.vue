@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The main Start button as a glass tube that fills with violet liquid as the current level nears
 // mastery. The surface is drawn every frame from out-of-step waves, so it never visibly repeats.
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps<{
   /** Progress toward finishing the current level, 0..1. */
@@ -17,58 +17,21 @@ defineEmits<{ click: [] }>()
 const buttonEl = ref<HTMLButtonElement>()
 defineExpose({ focus: () => buttonEl.value?.focus() })
 
-// Temporary: a picker to compare bubble styles while the owner chooses one. Remove with it.
-const BUBBLES_KEY = 'percent-drills:debug-bubbles'
-const showPicker = import.meta.env.DEV || new URLSearchParams(location.search).has('debug')
-const bubbles = ref<Bubbles>(readBubbles())
-function readBubbles(): Bubbles {
-  try {
-    const v = localStorage.getItem(BUBBLES_KEY)
-    if (v === 'none' || v === 'few' || v === 'lively') return v
-  } catch {
-    // Storage blocked: use the default.
-  }
-  return 'few'
-}
-watch(bubbles, (v) => {
-  try {
-    localStorage.setItem(BUBBLES_KEY, v)
-  } catch {
-    // Storage blocked: the choice lasts this visit.
-  }
-})
-
 /** [left %, size px, delay s] per bubble; fixed so the pattern doesn't jump between renders. */
-const BUBBLE_SETS: Record<Bubbles, { spots: [number, number, number][]; seconds: number }> = {
-  none: { spots: [], seconds: 0 },
-  few: {
-    spots: [
-      [18, 4, 0],
-      [42, 3, 2.1],
-      [66, 5, 3.6],
-      [84, 3, 1.2],
-    ],
-    seconds: 6,
-  },
-  lively: {
-    spots: [
-      [8, 3, 0],
-      [16, 5, 0.9],
-      [25, 3, 1.7],
-      [33, 4, 0.4],
-      [41, 6, 2.2],
-      [50, 3, 1.1],
-      [58, 4, 2.8],
-      [66, 5, 0.6],
-      [74, 3, 1.9],
-      [82, 4, 2.5],
-      [89, 3, 0.2],
-      [94, 5, 1.4],
-    ],
-    seconds: 3,
-  },
-}
-const bubbleSet = computed(() => BUBBLE_SETS[bubbles.value])
+const BUBBLES: [number, number, number][] = [
+  [8, 3, 0],
+  [16, 5, 0.9],
+  [25, 3, 1.7],
+  [33, 4, 0.4],
+  [41, 6, 2.2],
+  [50, 3, 1.1],
+  [58, 4, 2.8],
+  [66, 5, 0.6],
+  [74, 3, 1.9],
+  [82, 4, 2.5],
+  [89, 3, 0.2],
+  [94, 5, 1.4],
+]
 
 // The level on screen. It starts where Home last left it, so coming back after a problem shows
 // the liquid rising, and from 0 on the first visit.
@@ -162,78 +125,61 @@ onBeforeUnmount(() => cancelAnimationFrame(frame))
 </script>
 
 <script lang="ts">
-type Bubbles = 'none' | 'few' | 'lively'
 // Module scope, shared by every mount: where the liquid stood when Home was last left.
 const lastShown = { fill: 0, key: -1 }
 </script>
 
 <template>
-  <div>
-    <button
-      ref="buttonEl"
-      class="btn-cta group relative flex h-36 w-full flex-col items-start justify-between p-4 overflow-hidden border-2 border-cta/35 bg-white/45 text-left backdrop-blur-sm"
-      @click="$emit('click')"
+  <button
+    ref="buttonEl"
+    class="btn-cta group relative flex h-36 w-full flex-col items-start justify-between p-4 overflow-hidden border-2 border-cta/35 bg-white/45 text-left backdrop-blur-sm"
+    @click="$emit('click')"
+  >
+    <svg
+      class="absolute inset-0 h-full w-full"
+      :viewBox="`0 0 ${W} ${H}`"
+      preserveAspectRatio="none"
+      aria-hidden="true"
     >
-      <svg
-        class="absolute inset-0 h-full w-full"
-        :viewBox="`0 0 ${W} ${H}`"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path ref="backEl" class="fill-cta/40" />
-        <path ref="frontEl" class="fill-cta" />
-      </svg>
+      <path ref="backEl" class="fill-cta/40" />
+      <path ref="frontEl" class="fill-cta" />
+    </svg>
+    <span
+      class="absolute inset-y-0 left-0 overflow-hidden"
+      :style="{ width: `${level * 100}%` }"
+      aria-hidden="true"
+    >
       <span
-        class="absolute inset-y-0 left-0 overflow-hidden"
-        :style="{ width: `${level * 100}%` }"
-        aria-hidden="true"
-      >
-        <span
-          v-for="([left, size, delay], i) in bubbleSet.spots"
-          :key="`${bubbles}-${i}`"
-          class="absolute bottom-0 animate-bubble rounded-full bg-white/50"
-          :style="{
-            left: `${left}%`,
-            width: `${size}px`,
-            height: `${size}px`,
-            animationDuration: `${bubbleSet.seconds}s`,
-            animationDelay: `${delay}s`,
-          }"
-        />
-      </span>
-      <!-- Glass sheen over everything, so the tube reads as glass, not a flat box. -->
-      <span
-        class="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/45 to-transparent"
-        aria-hidden="true"
+        v-for="([left, size, delay], i) in BUBBLES"
+        :key="i"
+        class="absolute bottom-0 animate-bubble rounded-full bg-white/50"
+        :style="{
+          left: `${left}%`,
+          width: `${size}px`,
+          height: `${size}px`,
+          animationDelay: `${delay}s`,
+        }"
       />
+    </span>
+    <!-- Glass sheen over everything, so the tube reads as glass, not a flat box. -->
+    <span
+      class="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-linear-to-b from-white/45 to-transparent"
+      aria-hidden="true"
+    />
 
-      <span
-        class="relative inline-flex items-center gap-2 rounded-xl bg-panel/90 px-4 py-2 text-2xl font-bold text-cta shadow-soft sm:text-3xl"
-      >
-        {{ label }}
-        <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
-      </span>
-      <span
-        class="relative pl-1 font-mono text-lg font-bold tabular-nums"
-        :class="level >= 0.15 ? 'text-white' : 'text-cta'"
-        aria-hidden="true"
-      >
-        {{ Math.round(level * 100) }}%<template v-if="level >= 1"> ✓</template>
-      </span>
-      <span class="sr-only">{{ progressLabel }}</span>
-    </button>
-
-    <div
-      v-if="showPicker"
-      class="mt-2 flex gap-3 text-xs text-ink-muted"
-      role="radiogroup"
-      aria-label="Bubbles (debug)"
+    <span
+      class="relative inline-flex items-center gap-2 rounded-xl bg-panel/90 px-4 py-2 text-2xl font-bold text-cta shadow-soft sm:text-3xl"
     >
-      <span>Bubbles (debug):</span>
-      <label v-for="b in ['none', 'few', 'lively'] as const" :key="b" class="flex gap-1">
-        <input v-model="bubbles" type="radio" name="bubbles" :value="b" />
-        {{ b }}
-      </label>
-    </div>
-  </div>
+      {{ label }}
+      <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
+    </span>
+    <span
+      class="relative pl-1 font-mono text-lg font-bold tabular-nums"
+      :class="level >= 0.15 ? 'text-white' : 'text-cta'"
+      aria-hidden="true"
+    >
+      {{ Math.round(level * 100) }}%<template v-if="level >= 1"> ✓</template>
+    </span>
+    <span class="sr-only">{{ progressLabel }}</span>
+  </button>
 </template>

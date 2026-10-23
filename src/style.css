@@ -55,7 +55,7 @@
   /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
   --animate-fade: fade 0.4s ease-out both;
   /* Bubbles drifting up the Start button's liquid. */
-  --animate-bubble: bubble 6s ease-in infinite;
+  --animate-bubble: bubble 3s ease-in infinite;
 
   @keyframes rainbow-shift {
     to {
