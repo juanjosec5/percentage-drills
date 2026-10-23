@@ -18,8 +18,9 @@ export const en = {
   'home.reset': 'Reset progress',
   'home.resetConfirm': 'Erase all progress?',
 
+  'drill.reviewTag': '↺ review',
   'meter.toGoShort': '{n} more',
-  'meter.label': 'Last {window}: {right} right, {wrong} wrong',
+  'meter.label': '{done} of {goal}',
 
   'drill.back': 'Back',
   'drill.average': 'avg {time}',

@@ -1,11 +1,10 @@
-// Kumon-style mastery: you move up only when a level is both accurate and fast.
-// Repeating a level until it's automatic is the point, not a failure.
+// Kumon-style mastery as a plain countdown: a level is done after GOAL right answers within its
+// target time. Wrong or slow answers just don't count; nothing ever goes backwards, so the
+// learner always knows exactly how many are left.
 import type { Level } from './levels'
 
-/** How many recent answers at a level decide mastery. */
-export const WINDOW = 10
-/** Share of those answers that must be right. */
-export const PASS_ACCURACY = 0.9
+/** Right, on-time answers that finish a level. */
+export const GOAL = 10
 
 export interface Answer {
   correct: boolean
@@ -14,40 +13,20 @@ export interface Answer {
 
 export interface MasteryStatus {
   mastered: boolean
+  /** Every answer given at this level. */
   answered: number
-  accuracy: number
-  /** Median seconds over the window, so one slow problem doesn't sink it. */
-  medianSeconds: number
+  /** The answers that count: right and within the target time. */
+  counted: number
 }
 
-export function median(nums: number[]): number {
-  if (!nums.length) return 0
-  const s = [...nums].sort((a, b) => a - b)
-  const mid = Math.floor(s.length / 2)
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
+export const counts = (level: Level, a: Answer) => a.correct && a.ms <= level.targetSeconds * 1000
+
+export function mastery(level: Level, answers: Answer[]): MasteryStatus {
+  const counted = answers.filter((a) => counts(level, a)).length
+  return { mastered: counted >= GOAL, answered: answers.length, counted }
 }
 
-export function mastery(level: Level, recent: Answer[]): MasteryStatus {
-  const window = recent.slice(-WINDOW)
-  const accuracy = window.length ? window.filter((a) => a.correct).length / window.length : 0
-  const medianSeconds = median(window.map((a) => a.ms)) / 1000
-  return {
-    mastered:
-      window.length === WINDOW && accuracy >= PASS_ACCURACY && medianSeconds <= level.targetSeconds,
-    answered: window.length,
-    accuracy,
-    medianSeconds,
-  }
-}
-
-/**
- * Fewest further answers (each right, at exactly the target time) that would master the level:
- * always 1..WINDOW. Never 0: a level only unlocks on a right answer, so even a window that
- * already passes (but ended on a wrong one) needs one more.
- */
-export function answersToMastery(level: Level, recent: Answer[]): number {
-  const atTarget: Answer = { correct: true, ms: level.targetSeconds * 1000 }
-  for (let k = 1; k < WINDOW; k++)
-    if (mastery(level, [...recent, ...Array(k).fill(atTarget)]).mastered) return k
-  return WINDOW
+/** Answers still needed: 1..GOAL. Never 0, since a level unlocks on the answer that finishes it. */
+export function answersToMastery(level: Level, answers: Answer[]): number {
+  return Math.max(GOAL - mastery(level, answers).counted, 1)
 }

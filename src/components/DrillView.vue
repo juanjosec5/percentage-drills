@@ -58,8 +58,8 @@ const showTime = computed(() => progress.settings.showTimer || phase.value !== '
 const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))
 
 const sessionCorrect = computed(() => session.value.filter((a) => a.correct).length)
-// A plain average for the session header: it is labelled "avg". Mastery itself still uses the
-// median, so one interrupted answer can't block a level.
+// A plain average for the session header: it is labelled "avg". Mastery doesn't use it: a level
+// counts right answers within its target time, one by one.
 const sessionAverage = computed(() =>
   session.value.length ? session.value.reduce((sum, a) => sum + a.ms, 0) / session.value.length : 0,
 )
@@ -216,6 +216,12 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
         class="transition-opacity"
         :class="{ 'opacity-50': reviewing }"
       />
+      <!-- A review problem from an earlier level doesn't count toward this one: say so. -->
+      <span
+        v-if="reviewing"
+        class="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs font-medium text-ink-muted"
+        >{{ t('drill.reviewTag') }}</span
+      >
     </div>
 
     <p v-if="voided" class="text-sm text-ink-muted" role="status">{{ t('drill.voided') }}</p>

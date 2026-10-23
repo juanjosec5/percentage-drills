@@ -7,7 +7,7 @@ import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
-import { answersToMastery, WINDOW } from '@/engine/mastery'
+import { answersToMastery, GOAL } from '@/engine/mastery'
 import { useProgress, type Mode } from '@/stores/progress'
 
 const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
@@ -22,7 +22,7 @@ const isNewLevel = computed(() => progress.statusOf(progress.unlocked).answered 
 const toGo = computed(() =>
   answersToMastery(LEVELS[progress.unlocked], progress.history[LEVELS[progress.unlocked].id] ?? []),
 )
-const levelFill = computed(() => (progress.allMastered ? 1 : (WINDOW - toGo.value) / WINDOW))
+const levelFill = computed(() => (progress.allMastered ? 1 : (GOAL - toGo.value) / GOAL))
 const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
 const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
 

@@ -19,12 +19,12 @@ current level, a 🔥 count for the streak.
   typed (struck through) and a breakdown: a bar of the pieces of the calculation (for example
   10% + 5% for 15%) and the method for each.
 - **Tips:** a level's one-line tip (e.g. `19% = 20% − 1%`) shows on its first problem only.
-- **Levels:** 12 levels, from 10% of round numbers to a mixed review. You move up when your last
-  10 answers at your current level are at least 90% right and the median time is under that
-  level's target. About 30% of problems review earlier levels.
-- **Mastery meter:** the current level shows your last 10 answers as pips (✓ filled = right and
-  fast enough, ✓ outlined = right but slower, ✗ = not right) and the fewest right answers that
-  could still finish it. It dims during review problems, which don't move it.
+- **Levels:** 12 levels, from 10% of whole numbers to a mixed review. A level is done after
+  **10 right answers within its target time**. Wrong or slow answers don't count, and nothing is
+  ever taken back. About 30% of problems review earlier levels; they're tagged "↺ review" and
+  don't count toward the current level.
+- **Mastery meter:** 10 pips for the current level, one filled ✓ per counted answer, plus
+  "N more" in the drill. The glass on the Start button fills the same way.
 - Answers accept a decimal comma or a point (`10,5` or `10.5`).
 - **Language:** English or Spanish, from the EN / ES switch (on home and in the drill). It starts
   in Spanish when the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).
