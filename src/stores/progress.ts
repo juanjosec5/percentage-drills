@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 
 import { LEVELS } from '@/engine/levels'
 import { mastery, type Answer, type MasteryStatus } from '@/engine/mastery'
+import { PLACEMENT_MAX } from '@/engine/placement'
 import { dayKey, streakOf } from '@/engine/streak'
 
 import { HISTORY_CAP, KEY, normalize, SAVE_VERSION, type Day, type Saved } from './save'
@@ -79,10 +80,9 @@ export const useProgress = defineStore('progress', () => {
     return mastery(level, history.value[level.id] ?? [])
   }
 
-  /** Placement is offered only before anything has been answered. */
-  const canPlace = computed(
-    () => unlocked.value === 0 && placedUpTo.value === 0 && !Object.keys(history.value).length,
-  )
+  // Placement only ever moves the learner up and writes no answers, so it stays on offer for as
+  // long as it could still open a higher level.
+  const canPlace = computed(() => unlocked.value < PLACEMENT_MAX)
 
   /**
    * A level skipped by placement shows as placed (☆) until CONFIRM review answers there count;

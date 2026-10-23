@@ -13,14 +13,18 @@ async function answer(page: Page, right: boolean) {
   await input(page).press('Enter')
 }
 
-test('is offered only to a new learner', async ({ page }) => {
-  await open(page)
-  await expect(skip(page)).toBeVisible()
+test('stays on offer after practising', async ({ page }) => {
   await open(page, {
     unlocked: 0,
     history: { 'ten-round': [{ correct: true, ms: 900 }] },
     days: {},
   })
+  await expect(skip(page)).toBeVisible()
+})
+
+test('is gone once it could no longer move the learner up', async ({ page }) => {
+  await open(page, { unlocked: 6, history: {}, days: {} })
+  await expect(cta(page)).toBeVisible()
   await expect(skip(page)).toHaveCount(0)
 })
 
@@ -43,7 +47,8 @@ test('three right answers then a miss start the learner at level 5, with ☆ on 
   const levels = page.getByRole('list', { name: 'Levels' })
   await expect(levels.getByRole('img', { name: 'Skipped' })).toHaveCount(4)
   await expect(levels.getByRole('img', { name: 'Mastered' })).toHaveCount(0)
-  await expect(skip(page)).toHaveCount(0)
+  // Placed at level 5, it could still open up to level 7, so it stays.
+  await expect(skip(page)).toBeVisible()
 
   const saved = await stored(page)
   expect(saved.unlocked).toBe(4)
