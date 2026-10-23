@@ -7,61 +7,14 @@ import { LEVELS } from '@/engine/levels'
 import { mastery, type Answer, type MasteryStatus } from '@/engine/mastery'
 import { dayKey, streakOf } from '@/engine/streak'
 
+import { HISTORY_CAP, KEY, normalize, SAVE_VERSION, type Day, type Saved } from './save'
+
 export const DAILY_COUNT = 10
-const KEY = 'percent-drills:v1'
-/**
- * Answers kept per level. Mastery counts on-time right answers in here, so the cap sits far above
- * GOAL: even a learner who misses most of them reaches GOAL long before old ones drop off.
- */
-const HISTORY_CAP = 200
 
 export type Mode = 'daily' | 'endless'
 
-interface Day {
-  answered: number
-  correct: number
-  totalMs: number
-  bestMs: number | null
-  daily: number
-}
-
-export interface Settings {
-  /** Show the running clock while answering. Timing and mastery are the same either way. */
-  showTimer: boolean
-}
-
-export interface Saved {
-  unlocked: number
-  history: Record<string, Answer[]>
-  days: Record<string, Day>
-  settings: Settings
-}
-
-const DEFAULT_SETTINGS: Settings = { showTimer: true }
-
-export { dayKey }
-
-const isObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v)
-
-/**
- * Accepts whatever was stored and fills missing or invalid fields from defaults, so a partial
- * or older save (before settings existed) can't leave the app with `unlocked: NaN`.
- */
-export function normalize(raw: unknown): Saved {
-  const s = isObject(raw) ? raw : {}
-  const unlocked = Number.isInteger(s.unlocked) ? (s.unlocked as number) : 0
-  const settings = isObject(s.settings) ? s.settings : {}
-  return {
-    unlocked: Math.min(Math.max(unlocked, 0), LEVELS.length - 1),
-    history: isObject(s.history) ? (s.history as Saved['history']) : {},
-    days: isObject(s.days) ? (s.days as Saved['days']) : {},
-    settings: {
-      showTimer:
-        typeof settings.showTimer === 'boolean' ? settings.showTimer : DEFAULT_SETTINGS.showTimer,
-    },
-  }
-}
+export { dayKey, normalize }
+export type { Saved, Settings } from './save'
 
 function load(): Saved {
   try {
@@ -80,17 +33,21 @@ export const useProgress = defineStore('progress', () => {
   const days = ref(saved.days)
   const settings = ref(saved.settings)
 
+  function snapshot(): Saved {
+    return {
+      version: SAVE_VERSION,
+      unlocked: unlocked.value,
+      history: history.value,
+      days: days.value,
+      settings: settings.value,
+    }
+  }
+
   watch(
     [unlocked, history, days, settings],
     () => {
       try {
-        const data: Saved = {
-          unlocked: unlocked.value,
-          history: history.value,
-          days: days.value,
-          settings: settings.value,
-        }
-        localStorage.setItem(KEY, JSON.stringify(data))
+        localStorage.setItem(KEY, JSON.stringify(snapshot()))
       } catch {
         // Storage full or blocked: progress just won't persist this session.
       }
@@ -121,8 +78,16 @@ export const useProgress = defineStore('progress', () => {
     () => unlocked.value === LEVELS.length - 1 && statusOf(unlocked.value).mastered,
   )
 
+  let persistAsked = false
+
   /** Records one answer. Returns true when it unlocked the next level. */
   function record(levelIndex: number, answer: Answer, mode: Mode): boolean {
+    // Asks the browser not to evict the save under storage pressure. Once there is something
+    // worth keeping, not on load: some browsers weigh engagement when they decide.
+    if (!persistAsked) {
+      persistAsked = true
+      navigator.storage?.persist?.().catch(() => {})
+    }
     const id = LEVELS[levelIndex].id
     history.value[id] = [...(history.value[id] ?? []), answer].slice(-HISTORY_CAP)
 
@@ -157,6 +122,13 @@ export const useProgress = defineStore('progress', () => {
     days.value = {}
   }
 
+  /** Replaces progress with an imported save; settings stay, as they do on reset. */
+  function restore(saved: Saved) {
+    unlocked.value = saved.unlocked
+    history.value = saved.history
+    days.value = saved.days
+  }
+
   return {
     unlocked,
     history,
@@ -170,5 +142,7 @@ export const useProgress = defineStore('progress', () => {
     record,
     setShowTimer,
     reset,
+    restore,
+    snapshot,
   }
 })

@@ -10,6 +10,8 @@ export const es: Dictionary = {
   'lang.label': 'Idioma',
   seconds: '{s:1} s',
   'streak.aria': plural('Racha de {n} día', 'Racha de {n} días'),
+  'error.title': 'Algo salió mal',
+  'error.reset': 'Reiniciar',
 
   'home.start': 'Empezar nivel {n}',
   'home.continue': 'Continuar el nivel {n}',
@@ -20,6 +22,10 @@ export const es: Dictionary = {
   'home.locked': 'Bloqueado',
   'home.reset': 'Borrar progreso',
   'home.resetConfirm': '¿Borrar todo tu progreso?',
+  'home.export': 'Exportar',
+  'home.import': 'Importar',
+  'home.importConfirm': '¿Reemplazar tu progreso con este archivo?',
+  'home.importInvalid': 'No es un archivo de Percent Drills',
 
   'drill.levelDone': '★ ¡Nivel {n} completado!',
   'drill.reviewTag': '↺ repaso',

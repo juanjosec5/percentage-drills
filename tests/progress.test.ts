@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { LEVELS } from '@/engine/levels'
 import { GOAL } from '@/engine/mastery'
 import { DAILY_COUNT, normalize, useProgress } from '@/stores/progress'
+import { SAVE_VERSION } from '@/stores/save'
 
 const fast = (correct: boolean) => ({ correct, ms: 1000 })
 
@@ -50,6 +51,7 @@ describe('normalize', () => {
   it('gives defaults for nothing or junk', () => {
     for (const raw of [null, undefined, {}, 'x', 42, []])
       expect(normalize(raw)).toEqual({
+        version: SAVE_VERSION,
         unlocked: 0,
         history: {},
         days: {},
@@ -59,7 +61,11 @@ describe('normalize', () => {
 
   it('keeps an older save (before settings existed) and fills in settings', () => {
     const legacy = { unlocked: 3, history: { tens: [{ correct: true, ms: 900 }] }, days: {} }
-    expect(normalize(legacy)).toEqual({ ...legacy, settings: { showTimer: true } })
+    expect(normalize(legacy)).toEqual({
+      ...legacy,
+      version: SAVE_VERSION,
+      settings: { showTimer: true },
+    })
   })
 
   it('repairs fields a partial save broke', () => {
@@ -95,6 +101,46 @@ describe('settings', () => {
     progress.reset()
     expect(progress.unlocked).toBe(0)
     expect(progress.settings.showTimer).toBe(false)
+  })
+})
+
+describe('storage persistence', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('asks once, on the first recorded answer, not on load', () => {
+    const persist = vi.fn(() => Promise.resolve(true))
+    vi.stubGlobal('navigator', { storage: { persist } })
+    const progress = useProgress()
+    expect(persist).not.toHaveBeenCalled()
+    progress.record(0, fast(true), 'endless')
+    progress.record(0, fast(false), 'endless')
+    expect(persist).toHaveBeenCalledTimes(1)
+  })
+
+  it('records the answer where the API is missing or refuses', () => {
+    vi.stubGlobal('navigator', {})
+    useProgress().record(0, fast(true), 'endless')
+    setActivePinia(createPinia())
+    vi.stubGlobal('navigator', { storage: { persist: () => Promise.reject(new Error('no')) } })
+    const progress = useProgress()
+    progress.record(0, fast(true), 'endless')
+    expect(progress.today.answered).toBe(1)
+  })
+})
+
+describe('progress.restore', () => {
+  it('replaces progress from a backup and keeps settings', () => {
+    const progress = useProgress()
+    progress.setShowTimer(false)
+    progress.record(0, fast(true), 'daily')
+    const backup = normalize({
+      unlocked: 4,
+      history: { tens: [{ correct: true, ms: 800 }] },
+      days: {},
+      settings: { showTimer: true },
+    })
+    progress.restore(backup)
+    expect(progress.snapshot()).toEqual({ ...backup, settings: { showTimer: false } })
   })
 })
 

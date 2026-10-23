@@ -30,7 +30,10 @@ current level, a 🔥 count for the streak.
   in Spanish when the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).
 
 Progress and the language choice are saved in the browser's localStorage
-(`percent-drills:v1` and `percent-drills:lang`). There is no backend.
+(`percent-drills:v1` and `percent-drills:lang`). There is no backend. The save carries a format
+`version` (a save without one is v1); `src/stores/save.ts` upgrades older saves step by step
+and drops invalid entries before the app reads them. Export / Import on Home download the save
+as a JSON file and load one back through the same checks.
 
 ## Setup
 
