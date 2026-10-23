@@ -44,7 +44,7 @@ export const en = {
   'drill.back': '← Back',
   'drill.daily': 'Daily · {done}/{total}',
   'drill.endless': 'Endless · {right}/{total} right',
-  'drill.median': ' · typical {time}',
+  'drill.average': ' · avg {time}',
   'drill.progressDaily': 'Daily set',
   'drill.progressEndless': 'This round of ten',
   'drill.level': 'Level {n} · {title}',
@@ -64,7 +64,7 @@ export const en = {
   'drill.next': 'Next',
   'drill.finish': 'Finish',
   'drill.dailyDone': 'Daily set done',
-  'drill.session': 'This session: {right}/{total} right · typical time {time} per problem',
+  'drill.session': 'This session: {right}/{total} right · average {time} per problem',
   'drill.streak': plural('Streak: {n} day', 'Streak: {n} days'),
   'drill.home': 'Back home',
 

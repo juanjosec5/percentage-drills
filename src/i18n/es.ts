@@ -44,7 +44,7 @@ export const es: Dictionary = {
   'drill.back': '← Volver',
   'drill.daily': 'Reto diario · {done}/{total}',
   'drill.endless': 'Libre · {right}/{total} bien',
-  'drill.median': ' · típico {time}',
+  'drill.average': ' · promedio {time}',
   'drill.progressDaily': 'Reto diario',
   'drill.progressEndless': 'Esta ronda de diez',
   'drill.level': 'Nivel {n} · {title}',
@@ -64,7 +64,7 @@ export const es: Dictionary = {
   'drill.next': 'Siguiente',
   'drill.finish': 'Terminar',
   'drill.dailyDone': '¡Reto diario listo!',
-  'drill.session': 'Esta sesión: {right}/{total} bien · tiempo típico de {time} por problema',
+  'drill.session': 'Esta sesión: {right}/{total} bien · promedio de {time} por problema',
   'drill.streak': plural('Racha: {n} día', 'Racha: {n} días'),
   'drill.home': 'Volver al inicio',
 
