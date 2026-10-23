@@ -4,15 +4,18 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
+import LevelCompleteDialog from './LevelCompleteDialog.vue'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
 import { fmt, isCorrect, parseAnswer } from '@/engine/math'
-import { median } from '@/engine/mastery'
+import { median, type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
 const props = defineProps<{ mode: Mode; startLevel: number }>()
 const emit = defineEmits<{ exit: [] }>()
+
+type Phase = 'asking' | 'feedback' | 'done'
 
 const progress = useProgress()
 const rng = createRng()
@@ -22,24 +25,31 @@ const level = ref(props.startLevel)
 const problem = ref<Problem>()
 const problemLevel = ref(0)
 const input = ref('')
-const phase = ref<'asking' | 'feedback' | 'done'>('asking')
+const phase = ref<Phase>('asking')
 const wasCorrect = ref(false)
 /** The level just mastered, while its popup is open. */
 const finished = ref<number | null>(null)
-const session = ref<{ correct: boolean; ms: number }[]>([])
+const session = ref<Answer[]>([])
 
 const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
-const dialogEl = ref<HTMLDialogElement>()
+
+const current = computed(() => LEVELS[level.value])
+/** The level this problem came from: the current one, or an earlier one for review. */
+const asked = computed(() => LEVELS[problemLevel.value])
+const canSubmit = computed(() => parseAnswer(input.value) !== null)
+const tooSlow = computed(() => clock.ms.value / 1000 > asked.value.targetSeconds)
+const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))
 
 const sessionCorrect = computed(() => session.value.filter((a) => a.correct).length)
 const sessionMedian = computed(() => median(session.value.map((a) => a.ms)))
-const dailyLeft = computed(() => Math.max(0, DAILY_COUNT - progress.today.daily))
+const dailyAnswered = computed(() => Math.min(progress.today.daily, DAILY_COUNT))
+/** Daily mode with today's set complete: the drill ends after this answer. */
+const dailySetDone = computed(() => props.mode === 'daily' && progress.dailyDone)
 // Daily: how much of today's set is done. Endless: refills every DAILY_COUNT answers.
 const progressWidth = computed(() => {
   const n = session.value.length
-  const done =
-    props.mode === 'daily' ? DAILY_COUNT - dailyLeft.value : n && ((n - 1) % DAILY_COUNT) + 1
+  const done = props.mode === 'daily' ? dailyAnswered.value : n && ((n - 1) % DAILY_COUNT) + 1
   return `${(done / DAILY_COUNT) * 100}%`
 })
 
@@ -54,7 +64,7 @@ function ask() {
 }
 
 function submit() {
-  if (phase.value !== 'asking' || !problem.value || parseAnswer(input.value) === null) return
+  if (phase.value !== 'asking' || !problem.value || !canSubmit.value) return
   const ms = clock.stop()
   wasCorrect.value = isCorrect(input.value, problem.value.answer)
   session.value.push({ correct: wasCorrect.value, ms })
@@ -62,25 +72,18 @@ function submit() {
   if (progress.record(problemLevel.value, { correct: wasCorrect.value, ms }, props.mode)) {
     finished.value = problemLevel.value
     level.value = progress.unlocked
-    nextTick(() => dialogEl.value?.showModal())
   } else {
     nextTick(() => nextEl.value?.focus())
   }
 }
 
-/** Runs however the popup closes: a button, Esc, or the form below. */
 function onDialogClose() {
   finished.value = null
   if (phase.value === 'feedback') nextTick(() => nextEl.value?.focus())
 }
 
-function continueFromDialog() {
-  dialogEl.value?.close()
-  next()
-}
-
 function next() {
-  if (props.mode === 'daily' && progress.dailyDone) phase.value = 'done'
+  if (dailySetDone.value) phase.value = 'done'
   else ask()
 }
 
@@ -92,7 +95,7 @@ onMounted(ask)
     <header class="flex items-center justify-between gap-3">
       <button class="text-sm text-ink-muted hover:text-ink" @click="emit('exit')">← Back</button>
       <div class="text-right text-sm text-ink-muted">
-        <span v-if="mode === 'daily'">Daily · {{ DAILY_COUNT - dailyLeft }}/{{ DAILY_COUNT }}</span>
+        <span v-if="mode === 'daily'">Daily · {{ dailyAnswered }}/{{ DAILY_COUNT }}</span>
         <span v-else>Endless · {{ sessionCorrect }}/{{ session.length }} right</span>
         <span v-if="session.length"> · median {{ seconds(sessionMedian) }}</span>
       </div>
@@ -106,8 +109,8 @@ onMounted(ask)
     </div>
 
     <p v-if="phase !== 'done'" class="text-xs tracking-wide text-ink-muted uppercase">
-      Level {{ level + 1 }} · {{ LEVELS[level].title }}
-      <span v-if="problemLevel !== level"> · review: {{ LEVELS[problemLevel].title }}</span>
+      Level {{ level + 1 }} · {{ current.title }}
+      <span v-if="problemLevel !== level"> · review: {{ asked.title }}</span>
     </p>
 
     <template v-if="phase !== 'done' && problem">
@@ -118,9 +121,7 @@ onMounted(ask)
         <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ problem.prompt }}</p>
         <p
           class="font-mono text-lg tabular-nums"
-          :class="
-            phase === 'asking' ? 'text-ink-muted' : wasCorrect ? 'text-correct' : 'text-wrong'
-          "
+          :class="phase === 'asking' ? 'text-ink-muted' : verdictClass"
         >
           {{ seconds(clock.ms.value) }}
         </p>
@@ -133,21 +134,18 @@ onMounted(ask)
             autocomplete="off"
             placeholder="Your answer"
             aria-label="Your answer"
-            class="min-w-0 flex-1 rounded-lg border border-line bg-ground px-4 py-3 text-center font-mono text-2xl shadow-press outline-none focus:border-ink-muted"
+            class="well min-w-0 flex-1 rounded-lg px-4 py-3 text-center font-mono text-2xl outline-none focus:border-ink-muted"
           />
-          <button class="btn btn-primary" :disabled="parseAnswer(input) === null">Check</button>
+          <button class="btn btn-primary" :disabled="!canSubmit">Check</button>
         </form>
 
         <div v-else class="animate-pop space-y-1">
-          <p class="text-xl font-semibold" :class="wasCorrect ? 'text-correct' : 'text-wrong'">
+          <p class="text-xl font-semibold" :class="verdictClass">
             {{ wasCorrect ? 'Correct' : `Not quite: it's ${fmt(problem.answer)}` }}
           </p>
           <p v-if="!wasCorrect" class="text-sm text-ink-muted">You answered {{ input }}</p>
-          <p
-            v-if="clock.ms.value / 1000 > LEVELS[problemLevel].targetSeconds"
-            class="text-sm text-ink-muted"
-          >
-            Target for this level: {{ LEVELS[problemLevel].targetSeconds }}s
+          <p v-if="tooSlow" class="text-sm text-ink-muted">
+            Target for this level: {{ asked.targetSeconds }}s
           </p>
         </div>
       </section>
@@ -155,7 +153,7 @@ onMounted(ask)
       <section v-if="phase === 'feedback'" class="card space-y-4">
         <BreakdownBar :key="problem.prompt" :breakdown="problem.breakdown" />
         <button ref="nextEl" class="btn btn-primary w-full" @click="next">
-          {{ mode === 'daily' && progress.dailyDone ? 'Finish' : 'Next' }} ⏎
+          {{ dailySetDone ? 'Finish' : 'Next' }} ⏎
         </button>
       </section>
     </template>
@@ -173,46 +171,12 @@ onMounted(ask)
       <button class="btn btn-primary w-full" @click="emit('exit')">Back home</button>
     </section>
 
-    <dialog
-      ref="dialogEl"
-      aria-labelledby="level-done-title"
-      class="m-auto w-[min(92vw,26rem)] overflow-hidden rounded-2xl bg-panel text-ink shadow-lift backdrop:bg-ink/35 backdrop:backdrop-blur-sm open:animate-pop"
+    <LevelCompleteDialog
+      :level="finished"
+      :next="level"
+      :finishing="dailySetDone"
+      @continue="next"
       @close="onDialogClose"
-    >
-      <template v-if="finished !== null">
-        <div class="rainbow h-2 animate-rainbow" />
-        <div class="space-y-4 p-6 text-center">
-          <p class="text-4xl" aria-hidden="true">🎉</p>
-          <h2 id="level-done-title" class="text-2xl font-bold">
-            Level {{ finished + 1 }} complete!
-          </h2>
-          <p class="text-sm text-ink-muted">
-            {{ LEVELS[finished].title }} ·
-            {{ Math.round(progress.statusOf(finished).accuracy * 100) }}% right · median
-            {{ progress.statusOf(finished).medianSeconds.toFixed(1) }}s
-          </p>
-          <div class="rounded-xl border border-line bg-ground p-4 text-left shadow-press">
-            <p class="text-xs tracking-wide text-ink-muted uppercase">
-              Next up · Level {{ level + 1 }}
-            </p>
-            <p class="mt-1 font-semibold">{{ LEVELS[level].title }}</p>
-            <p class="mt-1 text-sm text-ink-muted">{{ LEVELS[level].strategy }}</p>
-          </div>
-          <button class="btn btn-primary w-full" autofocus @click="continueFromDialog">
-            {{
-              mode === 'daily' && progress.dailyDone
-                ? 'Finish the daily set'
-                : `Start level ${level + 1}`
-            }}
-            ⏎
-          </button>
-          <form method="dialog">
-            <button class="text-sm text-ink-muted underline hover:text-ink">
-              See the breakdown first
-            </button>
-          </form>
-        </div>
-      </template>
-    </dialog>
+    />
   </div>
 </template>

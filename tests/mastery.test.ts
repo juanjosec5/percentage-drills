@@ -1,5 +1,5 @@
 import { LEVELS } from '@/engine/levels'
-import { mastery, median, WINDOW } from '@/engine/mastery'
+import { mastery, median, summarize, WINDOW } from '@/engine/mastery'
 
 const level = LEVELS[0] // target 5s
 const answers = (n: number, correct: boolean, ms: number) =>
@@ -37,5 +37,16 @@ describe('mastery', () => {
     expect(median([])).toBe(0)
     expect(median([3, 1, 2])).toBe(2)
     expect(median([4, 1, 3, 2])).toBe(2.5)
+  })
+})
+
+describe('summarize', () => {
+  it('rounds accuracy to a whole percent and the median to a tenth of a second', () => {
+    const recent = [...answers(8, true, 3240), ...answers(1, false, 3260)]
+    expect(summarize(mastery(level, recent))).toBe('89% right · median 3.2s')
+  })
+
+  it('reads 0% and 0.0s before any answers', () => {
+    expect(summarize(mastery(level, []))).toBe('0% right · median 0.0s')
   })
 })

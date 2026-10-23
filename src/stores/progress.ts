@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { LEVELS } from '@/engine/levels'
-import { mastery, type Answer } from '@/engine/mastery'
+import { mastery, type Answer, type MasteryStatus } from '@/engine/mastery'
 
 export const DAILY_COUNT = 10
 const KEY = 'percent-drills:v1'
@@ -79,7 +79,7 @@ export const useProgress = defineStore('progress', () => {
     return n
   })
 
-  function statusOf(index: number) {
+  function statusOf(index: number): MasteryStatus {
     const level = LEVELS[index]
     return mastery(level, history.value[level.id] ?? [])
   }
