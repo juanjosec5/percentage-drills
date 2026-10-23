@@ -190,9 +190,11 @@ const lastShown = { fill: 0, key: -1 }
       aria-hidden="true"
     />
 
+    <!-- Frosted glass: the liquid shows through, blurred, so the label sits in the tube rather
+         than on top of it. Only this small pill is blurred, to keep repaints cheap on phones. -->
     <span
       :class="{ 'animate-pop': celebrating }"
-      class="relative inline-flex items-center gap-2 rounded-xl bg-panel/90 px-4 py-2 text-2xl font-bold text-cta shadow-soft sm:text-3xl"
+      class="relative inline-flex items-center gap-2 rounded-xl border border-white/60 bg-white/45 px-4 py-2 text-2xl font-bold text-cta shadow-soft backdrop-blur-md sm:text-3xl"
     >
       {{ celebrating ? celebrateLabel : label }}
       <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
