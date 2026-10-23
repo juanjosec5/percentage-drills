@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 
 import { LEVELS } from '@/engine/levels'
 import { GOAL } from '@/engine/mastery'
-import { DAILY_COUNT, normalize, useProgress } from '@/stores/progress'
+import { CONFIRM, DAILY_COUNT, normalize, useProgress } from '@/stores/progress'
 import { SAVE_VERSION } from '@/stores/save'
 
 const fast = (correct: boolean) => ({ correct, ms: 1000 })
@@ -56,6 +56,7 @@ describe('normalize', () => {
         history: {},
         days: {},
         settings: { showTimer: true },
+        placedUpTo: 0,
       })
   })
 
@@ -65,6 +66,7 @@ describe('normalize', () => {
       ...legacy,
       version: SAVE_VERSION,
       settings: { showTimer: true },
+      placedUpTo: 0,
     })
   })
 
@@ -138,6 +140,7 @@ describe('progress.restore', () => {
       history: { tens: [{ correct: true, ms: 800 }] },
       days: {},
       settings: { showTimer: true },
+      placedUpTo: 0,
     })
     progress.restore(backup)
     expect(progress.snapshot()).toEqual({ ...backup, settings: { showTimer: false } })
@@ -150,5 +153,42 @@ describe('progress.streak', () => {
     for (let i = 0; i < DAILY_COUNT; i++) progress.record(0, fast(true), 'endless')
     expect(progress.today.daily).toBe(0)
     expect(progress.streak).toBe(1)
+  })
+})
+
+describe('placement', () => {
+  it('unlocks without writing any answers, and marks skipped levels as placed', () => {
+    const progress = useProgress()
+    expect(progress.canPlace).toBe(true)
+    progress.place(4)
+    expect(progress.unlocked).toBe(4)
+    expect(progress.history).toEqual({})
+    expect(progress.today.answered).toBe(0)
+    expect(progress.isPlaced(3)).toBe(true)
+    expect(progress.isPlaced(4)).toBe(false)
+    expect(progress.canPlace).toBe(false)
+  })
+
+  it('turns a placed level into a mastered one after CONFIRM review answers there', () => {
+    const progress = useProgress()
+    progress.place(4)
+    for (let i = 0; i < CONFIRM; i++) progress.record(1, fast(true), 'endless')
+    expect(progress.isPlaced(1)).toBe(false)
+    expect(progress.isPlaced(2)).toBe(true)
+  })
+
+  it('never moves the learner back down', () => {
+    const progress = useProgress()
+    progress.unlocked = 5
+    progress.place(2)
+    expect(progress.unlocked).toBe(5)
+  })
+
+  it('is cleared by reset', () => {
+    const progress = useProgress()
+    progress.place(3)
+    progress.reset()
+    expect(progress.placedUpTo).toBe(0)
+    expect(progress.canPlace).toBe(true)
   })
 })

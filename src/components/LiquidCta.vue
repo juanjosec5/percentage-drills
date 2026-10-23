@@ -10,6 +10,8 @@ const props = defineProps<{
   levelKey: number
   /** Shown on the label while the glass celebrates a level-up, e.g. "★ Level 3 complete!". */
   celebrateLabel: string
+  /** The level changed without a level-up (placement): fill to the new level, no celebration. */
+  quiet?: boolean
   label: string
   /** Read by screen readers instead of the percentage. */
   progressLabel: string
@@ -111,7 +113,7 @@ let holdTimer: ReturnType<typeof setTimeout> | undefined
 
 function rise(fill: number, key: number) {
   // -1 means nothing shown yet this visit: a first load is not a level-up.
-  const levelledUp = lastShown.key >= 0 && key > lastShown.key
+  const levelledUp = !props.quiet && lastShown.key >= 0 && key > lastShown.key
   lastShown.fill = fill
   lastShown.key = key
   if (still) {

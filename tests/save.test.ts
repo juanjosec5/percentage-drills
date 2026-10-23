@@ -38,7 +38,7 @@ describe('versions', () => {
   })
 
   it('loads a v1 save unchanged, stamped with the current version', () => {
-    expect(normalize(structuredClone(V1))).toEqual({ ...V1, version: SAVE_VERSION })
+    expect(normalize(structuredClone(V1))).toEqual({ ...V1, version: SAVE_VERSION, placedUpTo: 0 })
   })
 
   it('runs no steps on a current or newer save', () => {
@@ -46,7 +46,7 @@ describe('versions', () => {
     expect(migrate(current)).toBe(current)
     const newer = { ...V1, version: SAVE_VERSION + 1 }
     expect(migrate(newer)).toBe(newer)
-    expect(normalize(newer)).toEqual({ ...V1, version: SAVE_VERSION })
+    expect(normalize(newer)).toEqual({ ...V1, version: SAVE_VERSION, placedUpTo: 0 })
   })
 })
 
@@ -110,6 +110,7 @@ describe('normalize: corrupt entries', () => {
       history: {},
       days: {},
       settings: { showTimer: true },
+      placedUpTo: 0,
     })
   })
 })
@@ -121,7 +122,7 @@ describe('backups', () => {
   })
 
   it('imports a v1-shaped file too', () => {
-    expect(parseBackup(JSON.stringify(V1))).toEqual({ ...V1, version: SAVE_VERSION })
+    expect(parseBackup(JSON.stringify(V1))).toEqual({ ...V1, version: SAVE_VERSION, placedUpTo: 0 })
   })
 
   it('cleans a hand-edited file instead of trusting it', () => {
@@ -136,5 +137,13 @@ describe('backups', () => {
 
   it('names the file by day', () => {
     expect(backupName('2026-10-23')).toBe('percent-drills-2026-10-23.json')
+  })
+})
+
+describe('placedUpTo', () => {
+  it('defaults to 0 and never exceeds the unlocked level', () => {
+    expect(normalize({ unlocked: 2 }).placedUpTo).toBe(0)
+    expect(normalize({ unlocked: 2, placedUpTo: 5 }).placedUpTo).toBe(2)
+    expect(normalize({ unlocked: 4, placedUpTo: 'x' }).placedUpTo).toBe(0)
   })
 })

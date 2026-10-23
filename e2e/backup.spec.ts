@@ -28,7 +28,7 @@ test('export downloads the save, and importing it brings the progress back', asy
   const file = await download
   expect(file.suggestedFilename()).toBe('percent-drills-2026-10-23.json')
   const contents = await readFile(await file.path(), 'utf8')
-  expect(JSON.parse(contents)).toMatchObject({ version: 2, ...SAVE })
+  expect(JSON.parse(contents)).toMatchObject({ version: 3, placedUpTo: 0, ...SAVE })
 
   page.once('dialog', (d) => d.accept())
   await page.getByRole('button', { name: 'Reset progress' }).click()
@@ -45,7 +45,7 @@ test('export downloads the save, and importing it brings the progress back', asy
   await reloaded
   await expect(cta(page)).toContainText('level 5')
   expect(question).toBe('Replace your progress with this file?')
-  expect(await stored(page)).toMatchObject({ version: 2, ...SAVE })
+  expect(await stored(page)).toMatchObject({ version: 3, placedUpTo: 0, ...SAVE })
 })
 
 test('declining the confirm keeps the current progress', async ({ page }) => {
