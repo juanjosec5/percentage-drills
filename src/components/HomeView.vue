@@ -112,11 +112,16 @@ const OPEN_DELAY_MS = 1100
     <!-- Offered, never forced: outlined so it can't outrank Start, and gone after the first answer. -->
     <button
       v-if="progress.canPlace"
-      class="-mt-1 flex min-h-13 w-full items-center justify-center gap-2 rounded-2xl border-2 border-cta/40 px-4 font-semibold text-cta transition-colors hover:border-cta hover:bg-cta/5 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cta"
+      class="group relative -mt-1 flex min-h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-cta/40 bg-white px-4 font-semibold text-cta transition-colors duration-300 hover:border-cta hover:text-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cta"
       @click="emit('place')"
     >
-      {{ t('home.findLevel') }}
-      <span aria-hidden="true">≫</span>
+      <!-- The violet fills in from the left on hover. -->
+      <span
+        class="absolute inset-0 origin-left scale-x-0 bg-cta transition-transform duration-300 ease-out group-hover:scale-x-100"
+        aria-hidden="true"
+      />
+      <span class="relative">{{ t('home.findLevel') }}</span>
+      <span class="relative" aria-hidden="true">≫</span>
     </button>
 
     <!-- Once the set is done the main button already starts endless practice. -->
