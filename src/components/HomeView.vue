@@ -3,11 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
 import LiquidCta from './LiquidCta.vue'
-import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
-import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
+import { answersToMastery, WINDOW } from '@/engine/mastery'
+import { useProgress, type Mode } from '@/stores/progress'
 
 const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
 const progress = useProgress()
@@ -16,7 +16,12 @@ const { t } = useI18n()
 // The main button: today's daily set first, endless practice after.
 const ctaMode = computed<Mode>(() => (progress.dailyDone ? 'endless' : 'daily'))
 const isNewLevel = computed(() => progress.statusOf(progress.unlocked).answered === 0)
-const dailyAnswered = computed(() => Math.min(progress.today.daily, DAILY_COUNT))
+// The glass shows how close the current level is to done ("5 more" = half full), the same
+// measure as the drill's meter, so the two never disagree.
+const toGo = computed(() =>
+  answersToMastery(LEVELS[progress.unlocked], progress.history[LEVELS[progress.unlocked].id] ?? []),
+)
+const levelFill = computed(() => (progress.allMastered ? 1 : (WINDOW - toGo.value) / WINDOW))
 const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
 const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
 
@@ -42,13 +47,14 @@ function confirmReset() {
 
     <LiquidCta
       ref="ctaEl"
-      :fill="dailyAnswered / DAILY_COUNT"
+      :fill="levelFill"
+      :level-key="progress.unlocked"
       :label="
         progress.dailyDone
           ? t('home.endless')
           : t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 })
       "
-      :progress-label="t('home.dailyAria', { done: dailyAnswered, total: DAILY_COUNT })"
+      :progress-label="progress.allMastered ? '' : t('meter.toGoShort', { n: toGo })"
       @click="emit('start', ctaMode, progress.unlocked)"
     />
 
@@ -77,7 +83,6 @@ function confirmReset() {
           <span class="w-6 shrink-0 font-mono text-ink-muted">{{ i + 1 }}</span>
           <span class="min-w-0 flex-1 space-y-1.5">
             <span class="block font-medium">{{ t(level.title) }}</span>
-            <MasteryMeter v-if="isCurrent(i)" :level-index="i" />
           </span>
           <span
             v-if="isMastered(i)"

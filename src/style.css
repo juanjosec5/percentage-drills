@@ -54,10 +54,7 @@
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
   /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
   --animate-fade: fade 0.4s ease-out both;
-  /* The Start button's liquid: a wave edge that keeps rolling (faster while it rises) and
-     bubbles drifting up. Reduced motion stills both. */
-  --animate-wave: wave 4s linear infinite;
-  --animate-wave-fast: wave 1s linear infinite;
+  /* Bubbles drifting up the Start button's liquid. */
   --animate-bubble: bubble 6s ease-in infinite;
 
   @keyframes rainbow-shift {
@@ -82,11 +79,6 @@
     }
     80% {
       box-shadow: 0 0 26px 6px rgb(var(--rainbow-3) / 0.4);
-    }
-  }
-  @keyframes wave {
-    to {
-      background-position-y: 24px;
     }
   }
   @keyframes bubble {
@@ -188,12 +180,4 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* The liquid's front edge: one wave period (24px) of violet, repeated down the tube. The colour is
-   --palette-cta, written out because a data URI can't read CSS variables. */
-@utility liquid-edge {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='24'%3E%3Cpath d='M0 0H4C9 3 9 9 4 12C-1 15 -1 21 4 24H0Z' fill='%237446D6'/%3E%3C/svg%3E");
-  background-size: 12px 24px;
-  background-repeat: repeat-y;
 }

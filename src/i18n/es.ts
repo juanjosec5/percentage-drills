@@ -13,7 +13,6 @@ export const es: Dictionary = {
 
   'home.start': 'Empezar nivel {n}',
   'home.continue': 'Continuar el nivel {n}',
-  'home.dailyAria': 'Reto diario {done}/{total}',
   'home.endless': 'Práctica libre',
   'home.endlessLink': 'Práctica libre →',
   'home.levels': 'Niveles',
