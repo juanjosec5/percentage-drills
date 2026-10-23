@@ -1,17 +1,17 @@
 <script setup lang="ts">
-// The optional "skip ahead" ladder: one problem per level, no verdicts on the way (grading every
-// answer would make it feel like an exam). The first miss or slow answer ends it, and Home opens
-// at the level reached.
-import { computed, nextTick, onMounted, ref } from 'vue'
+// The optional "find my level" test: a 3-problem check per world. Every answer gets a verdict
+// (a right one moves on by itself, a wrong one waits for Next), a passed check pauses on the
+// world it opens, and the run always ends on a result screen, never straight back Home.
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import GroupedText from './GroupedText.vue'
 import { useI18n } from '@/composables/useI18n'
-import { useStopwatch } from '@/composables/useStopwatch'
-import { LEVELS, type Problem } from '@/engine/levels'
-import { counts, type Answer } from '@/engine/mastery'
+import { seconds, useStopwatch } from '@/composables/useStopwatch'
+import type { Problem } from '@/engine/levels'
 import { isCorrect, parseAnswer } from '@/engine/math'
-import { placeFrom, RUNGS } from '@/engine/placement'
+import { CHECK_SIZE, CHECKS, checkResult, levelAt, passes, placeFrom } from '@/engine/placement'
 import { createRng } from '@/engine/rng'
+import { WORLDS, worldOf } from '@/engine/worlds'
 import { useProgress } from '@/stores/progress'
 
 const emit = defineEmits<{ done: [] }>()
@@ -20,31 +20,77 @@ const progress = useProgress()
 const rng = createRng()
 const clock = useStopwatch()
 
-const step = ref(0)
+/** How long a right answer's verdict and a passed world stay up before moving on. */
+const RIGHT_MS = 900
+const CLEARED_MS = 1200
+
+type Phase = 'asking' | 'verdict' | 'cleared' | 'result'
+const phase = ref<Phase>('asking')
+const check = ref(0)
+const results = ref<boolean[][]>([[]])
 const problem = ref<Problem>()
 const input = ref('')
-const answers: Answer[] = []
+const last = ref({ correct: false, ms: 0, slow: false })
+/** Whether placement moved the learner up; the result screen says so either way. */
+const moved = ref(false)
+
 const inputEl = ref<HTMLInputElement>()
+const nextEl = ref<HTMLButtonElement>()
+const startEl = ref<HTMLButtonElement>()
 const canSubmit = computed(() => parseAnswer(input.value) !== null)
+const passed = computed(() => results.value[check.value])
+const question = computed(() => passed.value.length)
+const step = computed(() => check.value * CHECK_SIZE + Math.min(question.value + 1, CHECK_SIZE))
+const resultWorld = computed(() => WORLDS[worldOf(progress.unlocked)])
+const isNewLevel = computed(() => progress.statusOf(progress.unlocked).answered === 0)
+
+let timer: ReturnType<typeof setTimeout> | undefined
+function after(ms: number, fn: () => void) {
+  timer = setTimeout(fn, ms)
+}
+onUnmounted(() => clearTimeout(timer))
 
 function ask() {
-  problem.value = LEVELS[RUNGS[step.value]].generate(rng)
+  problem.value = levelAt(check.value, question.value).generate(rng)
   input.value = ''
+  phase.value = 'asking'
   clock.start()
   nextTick(() => inputEl.value?.focus())
 }
 
 function submit() {
-  if (!problem.value || !canSubmit.value) return
+  if (phase.value !== 'asking' || !problem.value || !canSubmit.value) return
+  const level = levelAt(check.value, question.value)
   const answer = { correct: isCorrect(input.value, problem.value.answer), ms: clock.stop() }
-  answers.push(answer)
-  if (counts(LEVELS[RUNGS[step.value]], answer) && step.value < RUNGS.length - 1) {
-    step.value++
-    ask()
-  } else {
-    progress.place(placeFrom(answers))
-    emit('done')
+  last.value = { ...answer, slow: answer.correct && answer.ms > level.targetSeconds * 1000 }
+  passed.value.push(passes(level, answer))
+  phase.value = 'verdict'
+  if (answer.correct) after(RIGHT_MS, next)
+  else nextTick(() => nextEl.value?.focus())
+}
+
+function next() {
+  clearTimeout(timer)
+  const outcome = checkResult(passed.value)
+  if (outcome === null) return ask()
+  if (outcome === 'pass' && check.value < CHECKS.length - 1) {
+    phase.value = 'cleared'
+    after(CLEARED_MS, () => {
+      check.value++
+      results.value.push([])
+      ask()
+    })
+    return
   }
+  finish()
+}
+
+function finish() {
+  const before = progress.unlocked
+  progress.place(placeFrom(results.value))
+  moved.value = progress.unlocked > before
+  phase.value = 'result'
+  nextTick(() => startEl.value?.focus())
 }
 
 onMounted(ask)
@@ -61,26 +107,56 @@ onMounted(ask)
       >
         <span aria-hidden="true">←</span>
       </button>
-      <span
-        class="flex gap-1"
-        role="img"
-        :aria-label="t('placement.step', { n: step + 1, total: RUNGS.length })"
-      >
+      <template v-if="phase !== 'result'">
+        <span class="text-sm font-semibold text-cta">{{ t(`world.${WORLDS[check].id}`) }}</span>
         <span
-          v-for="i in RUNGS.length"
-          :key="i"
-          class="size-3 rounded-full"
-          :class="i <= step ? 'bg-cta' : 'border border-dashed border-ink-muted/50'"
-          aria-hidden="true"
-        />
-      </span>
+          class="flex gap-1"
+          role="img"
+          :aria-label="t('placement.step', { n: step, total: CHECKS.length * CHECK_SIZE })"
+        >
+          <span
+            v-for="i in CHECK_SIZE"
+            :key="i"
+            class="size-3 rounded-full"
+            :class="
+              i > passed.length
+                ? 'border border-dashed border-ink-muted/50'
+                : passed[i - 1]
+                  ? 'bg-cta'
+                  : 'bg-ink-muted/40'
+            "
+            aria-hidden="true"
+          />
+        </span>
+      </template>
     </header>
 
-    <section v-if="problem" class="card space-y-5 text-center">
+    <section
+      v-if="phase === 'cleared'"
+      class="card animate-pop space-y-2 text-center"
+      role="status"
+    >
+      <p class="text-lg font-semibold text-correct">
+        <span aria-hidden="true">✓</span> {{ t(`world.${WORLDS[check].id}`) }}
+      </p>
+      <p class="text-3xl font-bold text-cta">
+        <span aria-hidden="true">→ </span>{{ t(`world.${WORLDS[check + 1].id}`) }}
+      </p>
+    </section>
+
+    <section v-else-if="phase === 'result'" class="card animate-pop space-y-4 text-center">
+      <p class="text-3xl font-bold text-cta">{{ t(`world.${resultWorld.id}`) }}</p>
+      <p v-if="!moved" class="text-ink-muted">{{ t('placement.same') }}</p>
+      <button ref="startEl" class="btn btn-primary w-full" @click="emit('done')">
+        {{ t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 }) }}
+      </button>
+    </section>
+
+    <section v-else-if="problem" class="card space-y-5 text-center">
       <p class="font-mono text-4xl font-semibold sm:text-5xl">
         <GroupedText :text="t(problem.prompt)" />
       </p>
-      <form class="flex gap-2" @submit.prevent="submit">
+      <form v-if="phase === 'asking'" class="flex gap-2" @submit.prevent="submit">
         <input
           ref="inputEl"
           v-model="input"
@@ -93,6 +169,25 @@ onMounted(ask)
         />
         <button class="btn btn-primary" :disabled="!canSubmit">{{ t('drill.check') }}</button>
       </form>
+      <template v-else>
+        <div class="animate-pop space-y-1" role="status">
+          <p class="text-xl font-semibold" :class="last.correct ? 'text-correct' : 'text-wrong'">
+            <span aria-hidden="true">{{ last.correct ? '✓' : '✗' }}</span>
+            {{ last.correct ? t('drill.correct') : t('drill.wrong', { answer: problem.answer }) }}
+          </p>
+          <p v-if="last.slow" class="font-mono text-ink-muted tabular-nums">
+            <span aria-hidden="true">⏱ </span>{{ t(seconds(last.ms)) }}
+          </p>
+          <p v-if="!last.correct" class="font-mono text-ink-muted">
+            <s aria-hidden="true">{{ input }}</s>
+            <span class="sr-only">{{ t('drill.youAnswered', { input }) }}</span>
+          </p>
+        </div>
+        <button v-if="!last.correct" ref="nextEl" class="btn btn-primary w-full" @click="next">
+          {{ t('drill.next') }}
+          <span class="ml-1" aria-hidden="true">⏎</span>
+        </button>
+      </template>
     </section>
   </div>
 </template>
