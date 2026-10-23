@@ -12,13 +12,13 @@ import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
 import { isCorrect, parseAnswer } from '@/engine/math'
-import { type Answer } from '@/engine/mastery'
+import { counts, type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
 import type { Msg } from '@/i18n'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
 const props = defineProps<{ mode: Mode; startLevel: number }>()
-const emit = defineEmits<{ exit: [] }>()
+const emit = defineEmits<{ exit: []; place: [] }>()
 
 type Phase = 'asking' | 'feedback' | 'done'
 
@@ -104,6 +104,7 @@ function submit() {
   wasCorrect.value = isCorrect(input.value, problem.value.answer)
   session.value.push({ correct: wasCorrect.value, ms })
   phase.value = 'feedback'
+  offerPlacement.value = tooEasy({ correct: wasCorrect.value, ms })
   if (progress.record(problemLevel.value, { correct: wasCorrect.value, ms }, props.mode)) {
     finished.value = problemLevel.value
     level.value = progress.unlocked
@@ -112,6 +113,19 @@ function submit() {
     homeTimer = setTimeout(() => emit('exit'), LEVEL_UP_MS)
   }
   nextTick(() => nextEl.value?.focus())
+}
+
+// Placement offered at the moment it's earned: TOO_EASY right, on-time answers in a row on one of
+// the first levels. Shown once, ever, so it never nags.
+const TOO_EASY = 3
+const offerPlacement = ref(false)
+let fastInARow = 0
+function tooEasy(answer: Answer): boolean {
+  if (reviewing.value || problemLevel.value > 1) return false
+  fastInARow = counts(LEVELS[problemLevel.value], answer) ? fastInARow + 1 : 0
+  if (fastInARow < TOO_EASY || progress.settings.offeredPlacement) return false
+  progress.settings.offeredPlacement = true
+  return true
 }
 
 const LEVEL_UP_MS = 1600
@@ -273,6 +287,13 @@ onBeforeUnmount(() => {
           <p v-if="finished !== null" class="animate-pop text-2xl font-bold text-cta">
             {{ t('drill.levelDone', { n: finished + 1 }) }}
           </p>
+          <button
+            v-if="offerPlacement && finished === null"
+            class="mx-auto mt-2 block rounded-full border-2 border-cta/40 px-4 py-1.5 text-sm font-semibold text-cta hover:border-cta hover:bg-cta/5"
+            @click="emit('place')"
+          >
+            {{ t('drill.tooEasy') }}
+          </button>
           <p v-if="!wasCorrect" class="font-mono text-ink-muted">
             <s aria-hidden="true">{{ input }}</s>
             <span class="sr-only">{{ t('drill.youAnswered', { input }) }}</span>

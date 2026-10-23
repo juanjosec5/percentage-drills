@@ -25,7 +25,7 @@ export interface Seed {
   unlocked?: number
   history?: Record<string, Answer[]>
   days?: Record<string, unknown>
-  settings?: { showTimer: boolean }
+  settings?: { showTimer: boolean; offeredPlacement?: boolean }
 }
 
 /**

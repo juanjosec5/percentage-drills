@@ -24,6 +24,8 @@ export interface Day {
 export interface Settings {
   /** Show the running clock while answering. Timing and mastery are the same either way. */
   showTimer: boolean
+  /** The in-drill "too easy?" offer was shown; it appears once, ever. */
+  offeredPlacement: boolean
 }
 
 export interface Saved {
@@ -36,7 +38,7 @@ export interface Saved {
   placedUpTo: number
 }
 
-const DEFAULT_SETTINGS: Settings = { showTimer: true }
+const DEFAULT_SETTINGS: Settings = { showTimer: true, offeredPlacement: false }
 
 type Raw = Record<string, unknown>
 
@@ -122,6 +124,10 @@ export function normalize(raw: unknown): Saved {
     settings: {
       showTimer:
         typeof settings.showTimer === 'boolean' ? settings.showTimer : DEFAULT_SETTINGS.showTimer,
+      offeredPlacement:
+        typeof settings.offeredPlacement === 'boolean'
+          ? settings.offeredPlacement
+          : DEFAULT_SETTINGS.offeredPlacement,
     },
   }
 }

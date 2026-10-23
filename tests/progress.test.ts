@@ -55,7 +55,7 @@ describe('normalize', () => {
         unlocked: 0,
         history: {},
         days: {},
-        settings: { showTimer: true },
+        settings: { showTimer: true, offeredPlacement: false },
         placedUpTo: 0,
       })
   })
@@ -65,7 +65,7 @@ describe('normalize', () => {
     expect(normalize(legacy)).toEqual({
       ...legacy,
       version: SAVE_VERSION,
-      settings: { showTimer: true },
+      settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,
     })
   })
@@ -143,7 +143,10 @@ describe('progress.restore', () => {
       placedUpTo: 0,
     })
     progress.restore(backup)
-    expect(progress.snapshot()).toEqual({ ...backup, settings: { showTimer: false } })
+    expect(progress.snapshot()).toEqual({
+      ...backup,
+      settings: { showTimer: false, offeredPlacement: false },
+    })
   })
 })
 
