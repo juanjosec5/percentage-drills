@@ -10,8 +10,8 @@ export const en = {
 
   'home.start': 'Start level {n}',
   'home.continue': 'Continue level {n}',
-  'home.allMastered': 'All mastered ★',
   'home.dailyAria': 'Daily set {done}/{total}',
+  'home.endless': 'Endless practice',
   'home.endlessLink': 'Endless practice →',
   'home.levels': 'Levels',
   'home.mastered': 'Mastered',
