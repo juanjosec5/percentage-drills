@@ -49,7 +49,9 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --animate-rainbow: rainbow-shift 6s linear infinite;
+  /* Sweeps once on mount, then holds still: looping motion beside the problem distracts, and
+     WCAG 2.2.2 needs a pause control for anything that moves past 5s. */
+  --animate-rainbow: rainbow-shift 2.5s ease-out;
   --animate-glow: rainbow-glow 1.4s ease-out;
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
   /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
@@ -60,22 +62,23 @@
       background-position: 200% 0;
     }
   }
-  /* A halo that runs once through the spectrum, then settles back to the normal shadow. */
+  /* A halo that runs once through the spectrum, then settles back to the normal shadow. It
+     starts on green and skips red, which would read as "wrong" on a right answer. */
   @keyframes rainbow-glow {
     0% {
-      box-shadow: 0 0 0 0 rgb(var(--rainbow-1) / 0.6);
+      box-shadow: 0 0 0 0 rgb(var(--rainbow-4) / 0.6);
     }
     20% {
-      box-shadow: 0 0 30px 8px rgb(var(--rainbow-2) / 0.6);
+      box-shadow: 0 0 30px 8px rgb(var(--rainbow-4) / 0.6);
     }
     40% {
-      box-shadow: 0 0 34px 9px rgb(var(--rainbow-4) / 0.55);
+      box-shadow: 0 0 34px 9px rgb(var(--rainbow-5) / 0.55);
     }
     60% {
-      box-shadow: 0 0 34px 9px rgb(var(--rainbow-5) / 0.5);
+      box-shadow: 0 0 34px 9px rgb(var(--rainbow-6) / 0.5);
     }
     80% {
-      box-shadow: 0 0 26px 6px rgb(var(--rainbow-6) / 0.4);
+      box-shadow: 0 0 26px 6px rgb(var(--rainbow-3) / 0.4);
     }
   }
   @keyframes fade {

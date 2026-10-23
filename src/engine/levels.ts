@@ -163,8 +163,11 @@ const LADDER: Level[] = [
     ...text('tens'),
     targetSeconds: 9,
     generate: (rng) => {
+      // One step, not k identical 10% pieces: k equal slices made a noisy, clipped bar.
       const k = int(rng, 2, 9)
-      return built(k * 10, multiple(rng, 10, 20, 500), Array(k).fill(TEN))
+      const b = multiple(rng, 10, 20, 500)
+      const how = msg('how.timesTen', { ten: percentOf(10, b), k })
+      return built(k * 10, b, [{ pct: k * 10, sign: 1, how }])
     },
   },
   {

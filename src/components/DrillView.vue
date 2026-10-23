@@ -162,10 +162,8 @@ onMounted(ask)
         :class="{ 'animate-glow': phase === 'feedback' && wasCorrect }"
       >
         <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
-        <p
-          class="font-mono text-lg tabular-nums"
-          :class="phase === 'asking' ? 'text-ink-muted' : verdictClass"
-        >
+        <!-- Stays grey after answering: the verdict line alone carries right/wrong. -->
+        <p class="font-mono text-lg text-ink-muted tabular-nums">
           {{ t(seconds(clock.ms.value)) }}
         </p>
 
@@ -194,7 +192,7 @@ onMounted(ask)
 
         <div v-else class="animate-pop space-y-1">
           <p class="text-xl font-semibold" :class="verdictClass">
-            {{ verdict }}
+            <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
           </p>
           <p v-if="!wasCorrect" class="text-sm text-ink-muted">
             {{ t('drill.youAnswered', { input }) }}

@@ -82,6 +82,7 @@ export const es: Dictionary = {
   'how.one': 'corre la coma dos lugares a la izquierda',
   'how.doubled': 'el doble del 10 %',
   'how.triple': 'el 10 % por 3',
+  'how.timesTen': 'el 10 % es {ten}, × {k}',
   'how.half': 'la mitad',
   'how.whole': 'el total',
   'how.quarter': 'la mitad de la mitad',

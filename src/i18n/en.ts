@@ -81,6 +81,7 @@ export const en = {
   'how.one': 'move the decimal two places left',
   'how.doubled': '10% doubled',
   'how.triple': '10% times 3',
+  'how.timesTen': '10% is {ten}, × {k}',
   'how.half': 'half',
   'how.whole': 'the whole thing',
   'how.quarter': 'half, then half again',

@@ -9,8 +9,11 @@ import type { Breakdown, Segment } from '@/engine/levels'
 const props = defineProps<{ breakdown: Breakdown }>()
 const { t } = useI18n()
 
-/** --rainbow-N tokens for added pieces, in turn. Blue first: a red first piece reads as "wrong". */
-const ADD_COLORS = [5, 2, 4, 6, 3, 1]
+/**
+ * --rainbow-N tokens for added pieces, in turn. Blue first: a red first piece reads as "wrong".
+ * Yellow between blue and green keeps neighbours apart for red/green colour-blind eyes.
+ */
+const ADD_COLORS = [5, 3, 4, 6, 2, 1]
 /** Segments narrower than this share of the bar are too thin for a label (the tooltip still has it). */
 const LABEL_MIN_SHARE = 0.08
 
