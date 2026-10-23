@@ -9,6 +9,8 @@
   --palette-line: 226 219 204; /* #E2DBCC */
   --palette-ink: 38 34 29; /* charcoal #26221D */
   --palette-ink-muted: 112 104 92; /* #70685C */
+  --palette-cta: 116 70 214; /* deep violet #7446D6: the main Start button only */
+  --palette-mastered: 239 234 248; /* lavender #EFEAF8: a hint of the violet on ivory */
   --palette-correct: 30 135 80; /* #1E8750 */
   --palette-wrong: 196 58 50; /* #C43A32 */
 
@@ -31,6 +33,8 @@
   --color-line: rgb(var(--palette-line));
   --color-ink: rgb(var(--palette-ink));
   --color-ink-muted: rgb(var(--palette-ink-muted));
+  --color-cta: rgb(var(--palette-cta));
+  --color-mastered: rgb(var(--palette-mastered));
   --color-correct: rgb(var(--palette-correct));
   --color-wrong: rgb(var(--palette-wrong));
 
@@ -81,6 +85,11 @@
 @layer base {
   body {
     @apply bg-ground font-sans text-ink antialiased;
+  }
+
+  /* Tailwind v4 resets buttons to the default arrow; anything clickable should show a hand. */
+  :is(a[href], button, [role='button'], summary, label[for], select):not(:disabled) {
+    cursor: pointer;
   }
 }
 
@@ -134,22 +143,4 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Animated rainbow outline that keeps the panel fill inside. */
-@utility rainbow-border {
-  border: 2px solid transparent;
-  background:
-    linear-gradient(rgb(var(--palette-panel)), rgb(var(--palette-panel))) padding-box,
-    linear-gradient(
-        90deg,
-        rgb(var(--rainbow-1)),
-        rgb(var(--rainbow-3)),
-        rgb(var(--rainbow-4)),
-        rgb(var(--rainbow-5)),
-        rgb(var(--rainbow-6)),
-        rgb(var(--rainbow-1))
-      )
-      border-box;
-  background-size: 200% 100%;
 }
