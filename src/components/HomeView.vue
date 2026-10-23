@@ -16,6 +16,7 @@ function confirmReset() {
   <div class="mx-auto max-w-xl space-y-5 px-4 py-8">
     <header>
       <h1 class="text-3xl font-bold">Percent Drills</h1>
+      <div class="rainbow mt-2 h-1.5 w-28 animate-rainbow rounded-full" />
       <p class="mt-1 text-ink-muted">A few quick percentages a day, one small step at a time.</p>
     </header>
 
@@ -40,7 +41,7 @@ function confirmReset() {
 
     <section class="grid gap-3 sm:grid-cols-2">
       <button
-        class="card text-left transition-colors hover:border-accent disabled:opacity-60"
+        class="card card-action text-left disabled:opacity-60"
         :disabled="progress.dailyDone"
         @click="emit('start', 'daily', progress.unlocked)"
       >
@@ -54,7 +55,7 @@ function confirmReset() {
         </p>
       </button>
       <button
-        class="card text-left transition-colors hover:border-accent"
+        class="card card-action text-left"
         @click="emit('start', 'endless', progress.unlocked)"
       >
         <p class="font-semibold">Endless</p>
@@ -71,8 +72,8 @@ function confirmReset() {
       <ol class="space-y-2">
         <li v-for="(level, i) in LEVELS" :key="level.id">
           <button
-            class="card flex w-full items-start gap-3 p-4 text-left transition-colors enabled:hover:border-accent disabled:opacity-45"
-            :class="{ 'border-accent': i === progress.unlocked }"
+            class="card card-action flex w-full items-start gap-3 p-4 text-left disabled:opacity-45 disabled:shadow-none"
+            :class="{ 'rainbow-border animate-rainbow shadow-lift': i === progress.unlocked }"
             :disabled="i > progress.unlocked"
             @click="emit('start', 'endless', i)"
           >

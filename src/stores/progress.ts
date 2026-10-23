@@ -100,8 +100,9 @@ export const useProgress = defineStore('progress', () => {
     if (mode === 'daily') day.daily++
     days.value[key] = day
 
+    // Only a right answer can finish a level: celebrating straight after "Not quite" feels wrong.
     const atFrontier = levelIndex === unlocked.value && levelIndex < LEVELS.length - 1
-    if (atFrontier && statusOf(levelIndex).mastered) {
+    if (atFrontier && answer.correct && statusOf(levelIndex).mastered) {
       unlocked.value++
       return true
     }
