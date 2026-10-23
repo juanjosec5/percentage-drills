@@ -18,6 +18,7 @@ export const en = {
   'home.reset': 'Reset progress',
   'home.resetConfirm': 'Erase all progress?',
 
+  'drill.levelDone': '★ Level {n} complete!',
   'drill.reviewTag': '↺ review',
   'meter.toGoShort': '{n} more',
   'meter.label': '{done} of {goal}',
@@ -39,9 +40,6 @@ export const en = {
   'drill.dailyDone': 'Daily set done',
   'drill.session': '{right}/{total} right',
   'drill.home': 'Home',
-
-  'dialog.title': 'Level {n} complete!',
-  'dialog.startNext': 'Start level {n}',
 
   'prompt.of': '{pct}% of {base}',
   'prompt.whatPercent': '{part} is what % of {whole}?',

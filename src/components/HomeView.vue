@@ -26,6 +26,15 @@ const levelFill = computed(() => (progress.allMastered ? 1 : (GOAL - toGo.value)
 const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
 const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
 
+// The level that opened since Home was last shown: its row and the new ★ pop in, timed after the
+// glass has poured full (module scope, so it survives the trip to the drill and back).
+const justOpened = ref<number | null>(null)
+onMounted(() => {
+  if (lastSeen.unlocked >= 0 && progress.unlocked > lastSeen.unlocked)
+    setTimeout(() => (justOpened.value = progress.unlocked), OPEN_DELAY_MS)
+  lastSeen.unlocked = progress.unlocked
+})
+
 // autofocus only fires on page load, not when coming back from a drill.
 const ctaEl = ref<InstanceType<typeof LiquidCta>>()
 onMounted(() => ctaEl.value?.focus())
@@ -33,6 +42,12 @@ onMounted(() => ctaEl.value?.focus())
 function confirmReset() {
   if (confirm(t('home.resetConfirm'))) progress.reset()
 }
+</script>
+
+<script lang="ts">
+const lastSeen = { unlocked: -1 }
+/** About when the glass reaches the top on a level-up. */
+const OPEN_DELAY_MS = 1100
 </script>
 
 <template>
@@ -50,6 +65,7 @@ function confirmReset() {
       ref="ctaEl"
       :fill="levelFill"
       :level-key="progress.unlocked"
+      :celebrate-label="t('drill.levelDone', { n: progress.unlocked })"
       :label="
         progress.dailyDone
           ? t('home.endless')
@@ -72,7 +88,10 @@ function confirmReset() {
       <li v-for="(level, i) in LEVELS" :key="level.id">
         <button
           class="relative flex min-h-11 w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2 text-left transition-colors enabled:hover:bg-panel disabled:opacity-45"
-          :class="{ 'card-action bg-panel py-3 shadow-soft': isCurrent(i) }"
+          :class="{
+            'card-action bg-panel py-3 shadow-soft': isCurrent(i),
+            'animate-pop': justOpened !== null && (i === justOpened || i === justOpened - 1),
+          }"
           :disabled="i > progress.unlocked"
           @click="emit('start', 'endless', i)"
         >
@@ -88,6 +107,7 @@ function confirmReset() {
           </span>
           <span
             v-if="isMastered(i)"
+            :class="{ 'animate-pop': justOpened !== null && i === justOpened - 1 }"
             role="img"
             :aria-label="t('home.mastered')"
             class="flex size-6 shrink-0 items-center justify-center rounded-full bg-star text-sm text-ink shadow-soft"

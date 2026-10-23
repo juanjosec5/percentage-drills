@@ -56,7 +56,7 @@ src/
   i18n/         Pure TypeScript: the English and Spanish dictionaries and the translator
   stores/       Pinia store for progress (localStorage)
   composables/  Stopwatch, current language
-  components/   HomeView, DrillView, BreakdownBar, MasteryMeter, LevelCompleteDialog, …
+  components/   HomeView, DrillView, LiquidCta, BreakdownBar, MasteryMeter, …
 tests/          Vitest tests for the engine, the dictionaries and the copy limits
 ```
 
