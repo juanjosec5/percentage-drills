@@ -4,6 +4,7 @@
 // world it opens, and the run always ends on a result screen, never straight back Home.
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
+import GroupedText from './GroupedText.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import type { Problem } from '@/engine/levels'
@@ -152,7 +153,9 @@ onMounted(ask)
     </section>
 
     <section v-else-if="problem" class="card space-y-5 text-center">
-      <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
+      <p class="font-mono text-4xl font-semibold sm:text-5xl">
+        <GroupedText :text="t(problem.prompt)" />
+      </p>
       <form v-if="phase === 'asking'" class="flex gap-2" @submit.prevent="submit">
         <input
           ref="inputEl"
