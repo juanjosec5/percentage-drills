@@ -2,11 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
+import LiquidCta from './LiquidCta.vue'
 import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
-import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
+import { answersToMastery, WINDOW } from '@/engine/mastery'
+import { useProgress, type Mode } from '@/stores/progress'
 
 const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
 const progress = useProgress()
@@ -15,12 +17,17 @@ const { t } = useI18n()
 // The main button: today's daily set first, endless practice after.
 const ctaMode = computed<Mode>(() => (progress.dailyDone ? 'endless' : 'daily'))
 const isNewLevel = computed(() => progress.statusOf(progress.unlocked).answered === 0)
-const dailyAnswered = computed(() => Math.min(progress.today.daily, DAILY_COUNT))
+// The glass shows how close the current level is to done ("5 more" = half full), the same
+// measure as the drill's meter, so the two never disagree.
+const toGo = computed(() =>
+  answersToMastery(LEVELS[progress.unlocked], progress.history[LEVELS[progress.unlocked].id] ?? []),
+)
+const levelFill = computed(() => (progress.allMastered ? 1 : (WINDOW - toGo.value) / WINDOW))
 const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
 const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
 
 // autofocus only fires on page load, not when coming back from a drill.
-const ctaEl = ref<HTMLButtonElement>()
+const ctaEl = ref<InstanceType<typeof LiquidCta>>()
 onMounted(() => ctaEl.value?.focus())
 
 function confirmReset() {
@@ -39,34 +46,18 @@ function confirmReset() {
       <div class="rainbow mt-2 h-1.5 w-28 animate-rainbow rounded-full" />
     </header>
 
-    <button
+    <LiquidCta
       ref="ctaEl"
-      class="btn-cta group block w-full px-6 py-6 text-left"
+      :fill="levelFill"
+      :level-key="progress.unlocked"
+      :label="
+        progress.dailyDone
+          ? t('home.endless')
+          : t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 })
+      "
+      :progress-label="progress.allMastered ? '' : t('meter.toGoShort', { n: toGo })"
       @click="emit('start', ctaMode, progress.unlocked)"
-    >
-      <span class="block text-3xl font-bold sm:text-4xl">
-        {{ t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 }) }}
-        <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
-      </span>
-      <span class="mt-1 block text-white/90">
-        {{ t(progress.allMastered ? 'home.allMastered' : LEVELS[progress.unlocked].title) }}
-      </span>
-      <!-- Today's set as segments: the only place home shows it, so no words are needed. -->
-      <span class="mt-4 flex items-center gap-2" aria-hidden="true">
-        <span class="flex flex-1 gap-1">
-          <span
-            v-for="i in DAILY_COUNT"
-            :key="i"
-            class="h-1.5 flex-1 rounded-full"
-            :class="i <= dailyAnswered ? 'bg-white' : 'bg-white/30'"
-          />
-        </span>
-        <span v-if="progress.dailyDone" class="text-sm leading-none font-bold">✓</span>
-      </span>
-      <span class="sr-only">{{
-        t('home.dailyAria', { done: dailyAnswered, total: DAILY_COUNT })
-      }}</span>
-    </button>
+    />
 
     <!-- Once the set is done the main button already starts endless practice. -->
     <button
@@ -93,7 +84,7 @@ function confirmReset() {
           <span class="w-6 shrink-0 font-mono text-ink-muted">{{ i + 1 }}</span>
           <span class="min-w-0 flex-1 space-y-1.5">
             <span class="block font-medium">{{ t(level.title) }}</span>
-            <MasteryMeter v-if="isCurrent(i)" :level-index="i" />
+            <MasteryMeter v-if="isCurrent(i)" :level-index="i" hide-count />
           </span>
           <span
             v-if="isMastered(i)"

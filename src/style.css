@@ -54,6 +54,8 @@
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
   /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
   --animate-fade: fade 0.4s ease-out both;
+  /* Bubbles drifting up the Start button's liquid. */
+  --animate-bubble: bubble 3s ease-in infinite;
 
   @keyframes rainbow-shift {
     to {
@@ -77,6 +79,19 @@
     }
     80% {
       box-shadow: 0 0 26px 6px rgb(var(--rainbow-3) / 0.4);
+    }
+  }
+  @keyframes bubble {
+    0% {
+      transform: translateY(0);
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateY(-9rem);
+      opacity: 0;
     }
   }
   @keyframes fade {
@@ -134,7 +149,7 @@
 
 /* The violet Start button on the home screen; it glows violet instead of rainbow. */
 @utility btn-cta {
-  @apply rounded-2xl bg-cta text-white shadow-[0_14px_30px_-10px_rgb(var(--palette-cta)/0.6)] outline-offset-3 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-10px_rgb(var(--palette-cta)/0.7)] focus-visible:outline-2 focus-visible:outline-cta active:translate-y-0 active:shadow-press;
+  @apply rounded-2xl shadow-[0_14px_30px_-10px_rgb(var(--palette-cta)/0.6)] outline-offset-3 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-10px_rgb(var(--palette-cta)/0.7)] focus-visible:outline-2 focus-visible:outline-cta active:translate-y-0 active:shadow-press;
 }
 
 /* An icon-only control (Back, the timer switch): 40px, well over the 24px target size, and it

@@ -13,8 +13,7 @@ export const es: Dictionary = {
 
   'home.start': 'Empezar nivel {n}',
   'home.continue': 'Continuar el nivel {n}',
-  'home.allMastered': 'Todo dominado ★',
-  'home.dailyAria': 'Reto diario {done}/{total}',
+  'home.endless': 'Práctica libre',
   'home.endlessLink': 'Práctica libre →',
   'home.levels': 'Niveles',
   'home.mastered': 'Dominado',
@@ -74,7 +73,7 @@ export const es: Dictionary = {
   'how.threeQuarters': '100 % − 25 %',
   'how.fifth': '÷ 5',
 
-  'level.ten-round.title': '10 % · números redondos',
+  'level.ten-round.title': '10 % · números enteros',
   'level.ten-round.strategy': '10 % de 70 = 70 ÷ 10 = 7',
   'level.ten-any.title': '10 % · cualquier número',
   'level.ten-any.strategy': '10 % de 83 = 83 ÷ 10 = 8,3',
