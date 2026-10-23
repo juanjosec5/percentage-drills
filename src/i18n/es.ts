@@ -82,10 +82,8 @@ export const es: Dictionary = {
   'how.threeQuarters': '100% − 25%',
   'how.fifth': '÷ 5',
 
-  'level.ten-round.title': '10% · números enteros',
-  'level.ten-round.strategy': '10% de 70 = 70 ÷ 10 = 7',
-  'level.ten-any.title': '10% · cualquier número',
-  'level.ten-any.strategy': '10% de 83 = 83 ÷ 10 = 8,3',
+  'level.ten-any.title': '10%',
+  'level.ten-any.strategy': '10% de 4\u202f372 = 437,2',
   'level.five.title': '5%',
   'level.five.strategy': '5% de 70 = la mitad de 7 = 3,5',
   'level.one.title': '1%',

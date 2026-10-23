@@ -5,7 +5,7 @@ import { LEVELS } from './levels'
 import { counts, type Answer } from './mastery'
 
 /** Level indexes asked, in order: 10% of any number, 5%, 1%, 20%…90%, then fractions. */
-export const RUNGS = [1, 2, 3, 4, 5]
+export const RUNGS = [0, 1, 2, 3, 4]
 /** The highest level placement can open; from there on it has nothing to offer. */
 export const PLACEMENT_MAX = RUNGS[RUNGS.length - 1] + 1
 

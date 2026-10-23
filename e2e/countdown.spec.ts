@@ -7,8 +7,8 @@ const W = { correct: false, ms: 900 }
 const SLOW = { correct: true, ms: 99_000 }
 
 test.beforeEach(async ({ page }) => {
-  // Level 4 ("1%"): three right and fast, two wrong, one right but slow.
-  await open(page, { unlocked: 3, history: { one: [R, W, SLOW, R, W, R] }, days: {} })
+  // Level 3 ("1%"): three right and fast, two wrong, one right but slow.
+  await open(page, { unlocked: 2, history: { one: [R, W, SLOW, R, W, R] }, days: {} })
 })
 
 test('counts only right, on-time answers', async ({ page }) => {

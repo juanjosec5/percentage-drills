@@ -65,6 +65,8 @@ describe('normalize', () => {
     const legacy = { unlocked: 3, history: { tens: [{ correct: true, ms: 900 }] }, days: {} }
     expect(normalize(legacy)).toEqual({
       ...legacy,
+      // Old level 4 is level 3 since the two 10% levels merged (v4).
+      unlocked: 2,
       version: SAVE_VERSION,
       settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,

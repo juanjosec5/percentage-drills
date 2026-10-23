@@ -22,10 +22,10 @@ test.describe('Spanish browser', () => {
   test('a Spanish drill has no English, "15%" with no space and a decimal comma', async ({
     page,
   }) => {
-    // Level 7 ("15%"), part-way through.
-    await open(page, { unlocked: 6, history: { fifteen: answers(3) }, days: {} })
+    // Level 6 ("15%"), part-way through.
+    await open(page, { unlocked: 5, history: { fifteen: answers(3) }, days: {} })
     expect(englishIn(await page.locator('body').innerText())).toEqual([])
-    await expect(cta(page)).toContainText('Continuar el nivel 7')
+    await expect(cta(page)).toContainText('Continuar el nivel 6')
 
     let confirmText = ''
     page.once('dialog', (d) => {
@@ -36,7 +36,7 @@ test.describe('Spanish browser', () => {
     await expect.poll(() => confirmText).toBe('¿Borrar todo tu progreso?')
 
     await cta(page).click()
-    await expect(page.getByText('Nivel 7', { exact: true })).toBeVisible()
+    await expect(page.getByText('Nivel 6', { exact: true })).toBeVisible()
     // Answer right until a 15% problem with a decimal answer comes up (reviews come first sometimes).
     const wanted = (q: string) => /^15% de \d+$/.test(q) && !Number.isInteger(solve(q))
     for (let i = 0; i < 20 && !wanted(await promptEl(page).innerText()); i++) {

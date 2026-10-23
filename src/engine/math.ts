@@ -20,9 +20,13 @@ export function applyChange(base: number, pct: number): number {
 
 const formatters = new Map<string, Intl.NumberFormat>()
 
+/** U+202F, the narrow no-break space: groups digits in both locales and never wraps. */
+export const GROUP = '\u202f'
+
 /**
- * Display a number the way people say it: no trailing zeros (unless `digits` fixes them) and the
- * locale's decimal mark (10.5, 10,5). No thousands separator: parseAnswer would read 1,000 as 1.
+ * Display a number the way people say it: no trailing zeros (unless `digits` fixes them), the
+ * locale's decimal mark (10.5, 10,5) and thousands grouped by a thin space (43 720). Not by a
+ * comma or point: parseAnswer would read 1,000 as 1, and Spanish uses the comma for decimals.
  */
 export function fmt(n: number, lang = 'en', digits?: number): string {
   const id = `${lang}:${digits}`
@@ -35,7 +39,8 @@ export function fmt(n: number, lang = 'en', digits?: number): string {
     })
     formatters.set(id, f)
   }
-  return f.format(digits === undefined ? round2(n) : n)
+  // Only the whole part can match: maximumFractionDigits is at most 2.
+  return f.format(digits === undefined ? round2(n) : n).replace(/\B(?=(\d{3})+(?!\d))/g, GROUP)
 }
 
 /**

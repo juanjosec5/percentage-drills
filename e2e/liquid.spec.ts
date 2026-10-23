@@ -9,7 +9,7 @@ test.describe('with motion', () => {
   test.use({ reducedMotion: 'no-preference' })
 
   test('the glass shows how far the current level is, and keeps moving', async ({ page }) => {
-    await open(page, { unlocked: 3, history: { one: answers(5) }, days: {} })
+    await open(page, { unlocked: 2, history: { one: answers(5) }, days: {} })
     await expect(pct(page)).toHaveText('50%', { timeout: 5000 })
     await expect(cta(page).locator('.sr-only')).toHaveText('5 more')
     const before = await surface(page).getAttribute('d')
@@ -17,7 +17,7 @@ test.describe('with motion', () => {
   })
 
   test('it rises when Home comes back after a right answer', async ({ page }) => {
-    await open(page, { unlocked: 3, history: { one: answers(5) }, days: {} })
+    await open(page, { unlocked: 2, history: { one: answers(5) }, days: {} })
     await expect(pct(page)).toHaveText('50%', { timeout: 5000 })
     await cta(page).click()
     // Review problems don't fill it: answer until one at this level is saved.
@@ -35,7 +35,7 @@ test.describe('with motion', () => {
 })
 
 test('with reduced motion it fills at once and holds still', async ({ page }) => {
-  await open(page, { unlocked: 3, history: { one: answers(7) }, days: {} })
+  await open(page, { unlocked: 2, history: { one: answers(7) }, days: {} })
   // A pour to 70% takes about 1.9 s; reduced motion skips it.
   await expect(pct(page)).toHaveText('70%', { timeout: 500 })
   const before = await surface(page).getAttribute('d')
