@@ -5,25 +5,29 @@ sessions every day, and you only move up once a step is both accurate and fast.
 
 ## How it works
 
-- **Daily set:** 10 problems a day.
+The screens show progress instead of explaining it: a bar for the daily set, pips for the
+current level, a 🔥 count for the streak.
+
+- **Daily set:** 10 problems a day, shown as a 10-segment bar on the Start button.
 - **Streak:** any 10 answers in a day (daily set or endless) keep it going. One missed day a week
   is forgiven automatically; two missed days in a row end it.
 - **Endless:** a new problem every time you answer one, for as long as you like.
-- **Timer:** every problem is timed from when it appears to when you submit, and the level's
-  target time is shown from the start. "Timer: off" hides the running clock (the time still
-  counts and shows after you answer). Leaving the page mid-problem drops that problem, so an
-  interruption never records a very slow answer.
-- **Breakdown:** after each answer, a bar shows the whole (100%) with each piece of the
-  calculation laid on it (for example 10% + 5% for 15%), followed by the steps written out.
-- **Levels:** 12 levels, from "10% of round numbers" to a mixed review. You move up when your
-  last 10 answers at your current level are at least 90% right and the median time is under that
+- **Timer:** every problem is timed from when it appears to when you submit. The ⏱ switch hides
+  the running clock (the time still counts and shows after you answer). Leaving the page
+  mid-problem drops that problem, so an interruption never records a very slow answer.
+- **Feedback:** a right answer shows ✓ and Next. A wrong one shows the correct answer, what you
+  typed (struck through) and a breakdown: a bar of the pieces of the calculation (for example
+  10% + 5% for 15%) and the method for each.
+- **Tips:** a level's one-line tip (e.g. `19% = 20% − 1%`) shows on its first problem only.
+- **Levels:** 12 levels, from 10% of round numbers to a mixed review. You move up when your last
+  10 answers at your current level are at least 90% right and the median time is under that
   level's target. About 30% of problems review earlier levels.
 - **Mastery meter:** the current level shows your last 10 answers as pips (✓ filled = right and
-  within target, ✓ outlined = right but slower, ✗ = not right) and the fewest right answers that
-  could still finish it.
+  fast enough, ✓ outlined = right but slower, ✗ = not right) and the fewest right answers that
+  could still finish it. It dims during review problems, which don't move it.
 - Answers accept a decimal comma or a point (`10,5` or `10.5`).
-- **Language:** English or Spanish, from the EN / ES switch at the top. It starts in Spanish when
-  the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).
+- **Language:** English or Spanish, from the EN / ES switch (on home and in the drill). It starts
+  in Spanish when the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).
 
 Progress and the language choice are saved in the browser's localStorage
 (`percent-drills:v1` and `percent-drills:lang`). There is no backend.
@@ -52,8 +56,8 @@ src/
   i18n/         Pure TypeScript: the English and Spanish dictionaries and the translator
   stores/       Pinia store for progress (localStorage)
   composables/  Stopwatch, current language
-  components/   HomeView, DrillView, BreakdownBar, LevelCompleteDialog
-tests/          Vitest tests for the engine
+  components/   HomeView, DrillView, BreakdownBar, MasteryMeter, LevelCompleteDialog, …
+tests/          Vitest tests for the engine, the dictionaries and the copy limits
 ```
 
 To add or tune a level, edit `src/engine/levels.ts`. Each level has a generator that returns the
@@ -62,6 +66,8 @@ every answer from the prompt text, in both languages, so a wrong generator fails
 
 The engine never builds display text. It returns messages (a dictionary key plus raw numbers),
 and the UI renders them in the current language. To add or change copy, edit `src/i18n/en.ts`
-and `src/i18n/es.ts`; a key missing from Spanish fails the type-check.
+and `src/i18n/es.ts`; a key missing from Spanish fails the type-check. `tests/copy.test.ts`
+caps level titles and tips, and bans timing jargon ("typical", "target"), so text can't creep
+back.
 
 Stack: Vue 3, TypeScript, Vite, Pinia, Tailwind CSS v4, Vitest.

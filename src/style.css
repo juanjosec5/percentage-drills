@@ -10,7 +10,6 @@
   --palette-ink: 38 34 29; /* charcoal #26221D */
   --palette-ink-muted: 112 104 92; /* #70685C */
   --palette-cta: 116 70 214; /* deep violet #7446D6: the main Start button only */
-  --palette-mastered: 239 234 248; /* lavender #EFEAF8: a hint of the violet on ivory */
   --palette-correct: 26 122 72; /* #1A7A48: 5:1 on the panel (AA) */
   --palette-wrong: 196 58 50; /* #C43A32 */
 
@@ -34,10 +33,9 @@
   --color-ink: rgb(var(--palette-ink));
   --color-ink-muted: rgb(var(--palette-ink-muted));
   --color-cta: rgb(var(--palette-cta));
-  --color-mastered: rgb(var(--palette-mastered));
   --color-correct: rgb(var(--palette-correct));
   --color-wrong: rgb(var(--palette-wrong));
-  /* The ★ Mastered badge borrows the rainbow's yellow. */
+  /* The ★ for a mastered level borrows the rainbow's yellow. */
   --color-star: rgb(var(--rainbow-3));
 
   --shadow-soft:
@@ -114,7 +112,7 @@
   @apply transition-[transform,box-shadow] duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-lift enabled:active:translate-y-0 enabled:active:shadow-press;
 }
 
-/* A pressed-in surface: the breakdown bar, the answer box, the "next up" panel. */
+/* A pressed-in surface: the breakdown bar, the answer box. */
 @utility well {
   @apply border border-line bg-ground shadow-press;
 }
@@ -139,9 +137,10 @@
   @apply rounded-2xl bg-cta text-white shadow-[0_14px_30px_-10px_rgb(var(--palette-cta)/0.6)] outline-offset-3 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-10px_rgb(var(--palette-cta)/0.7)] focus-visible:outline-2 focus-visible:outline-cta active:translate-y-0 active:shadow-press;
 }
 
-/* Small uppercase status pill on a level card. */
-@utility badge {
-  @apply rounded-full px-2 py-0.5 text-[11px] font-semibold tracking-wide uppercase;
+/* An icon-only control (Back, the timer switch): 40px, well over the 24px target size, and it
+   needs an aria-label since the glyph is hidden from screen readers. */
+@utility icon-btn {
+  @apply inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-transparent text-ink-muted outline-offset-2 transition-opacity hover:text-ink focus-visible:outline-2 focus-visible:outline-ink;
 }
 
 @utility rainbow {

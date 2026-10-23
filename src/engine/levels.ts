@@ -19,7 +19,7 @@ export interface Breakdown {
   /** The whole the bar stands for (100%). */
   base: number
   segments: Segment[]
-  /** Step-by-step lines, e.g. "10% of 70 = 7 · move the decimal". */
+  /** Step-by-step lines, e.g. "10% of 70 = 7 · ÷ 10". */
   steps: Msg[]
   /** The last line: how the pieces combine into the answer. */
   result: Msg
@@ -34,8 +34,8 @@ export interface Problem {
 export interface Level {
   id: string
   title: Msg
-  /** One-line strategy shown on the level card. */
-  strategy: Msg
+  /** The tip shown on a level's first problem. Mixed has none: it only reuses earlier tricks. */
+  strategy?: Msg
   /** Target seconds per problem to count as fast enough for mastery. */
   targetSeconds: number
   generate: (rng: Rng) => Problem
@@ -129,7 +129,7 @@ type LevelId =
   | 'mixed'
 
 /** A level's title and strategy live in the dictionaries under its id. */
-const text = (id: LevelId) => ({
+const text = (id: Exclude<LevelId, 'mixed'>) => ({
   id,
   title: msg(`level.${id}.title`),
   strategy: msg(`level.${id}.strategy`),
@@ -264,7 +264,8 @@ const LADDER: Level[] = [
 export const LEVELS: Level[] = [
   ...LADDER,
   {
-    ...text('mixed'),
+    id: 'mixed',
+    title: msg('level.mixed.title'),
     targetSeconds: 12,
     generate: (rng) => pick(rng, LADDER).generate(rng),
   },

@@ -104,10 +104,9 @@ export const useProgress = defineStore('progress', () => {
    * Any DAILY_COUNT answers make a day practised, in either mode: practising a level from its
    * card counts as much as the daily set does.
    */
-  const streakInfo = computed(() =>
-    streakOf((key) => (days.value[key]?.answered ?? 0) >= DAILY_COUNT),
+  const streak = computed(
+    () => streakOf((key) => (days.value[key]?.answered ?? 0) >= DAILY_COUNT).days,
   )
-  const streak = computed(() => streakInfo.value.days)
 
   function statusOf(index: number): MasteryStatus {
     const level = LEVELS[index]
@@ -163,7 +162,6 @@ export const useProgress = defineStore('progress', () => {
     today,
     dailyDone,
     streak,
-    streakInfo,
     allMastered,
     statusOf,
     record,

@@ -1,11 +1,9 @@
 <script setup lang="ts">
-// The popup after a level is mastered: how it went, and what the next level is about.
-import { computed, ref, watch } from 'vue'
+// The popup after a level is mastered: a celebration and one button. The next level's tip shows
+// on its first problem instead.
+import { ref, watch } from 'vue'
 
 import { useI18n } from '@/composables/useI18n'
-import { LEVELS } from '@/engine/levels'
-import { summarize } from '@/engine/mastery'
-import { useProgress } from '@/stores/progress'
 
 const props = defineProps<{
   /** The level just mastered; the popup opens when this is set. */
@@ -16,13 +14,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ continue: []; close: [] }>()
 
-const progress = useProgress()
 const { t } = useI18n()
 const dialogEl = ref<HTMLDialogElement>()
-
-const stats = computed(() =>
-  props.level === null ? '' : t(summarize(progress.statusOf(props.level))),
-)
 
 // Post flush, so the content is rendered (and the button can take autofocus) before it opens.
 watch(
@@ -40,7 +33,7 @@ function continueOn() {
 </script>
 
 <template>
-  <!-- `close` fires however the popup closes: the button, Esc, or the form below. -->
+  <!-- `close` fires however the popup closes: the button or Esc. -->
   <dialog
     ref="dialogEl"
     aria-labelledby="level-done-title"
@@ -54,23 +47,10 @@ function continueOn() {
         <h2 id="level-done-title" class="text-2xl font-bold">
           {{ t('dialog.title', { n: level + 1 }) }}
         </h2>
-        <p class="text-sm text-ink-muted">{{ t(LEVELS[level].title) }} · {{ stats }}</p>
-        <div class="well rounded-xl p-4 text-left">
-          <p class="text-xs tracking-wide text-ink-muted uppercase">
-            {{ t('dialog.nextUp', { n: next + 1 }) }}
-          </p>
-          <p class="mt-1 font-semibold">{{ t(LEVELS[next].title) }}</p>
-          <p class="mt-1 text-sm text-ink-muted">{{ t(LEVELS[next].strategy) }}</p>
-        </div>
         <button class="btn btn-primary w-full" autofocus @click="continueOn">
-          {{ finishing ? t('dialog.finishDaily') : t('dialog.startNext', { n: next + 1 }) }}
+          {{ finishing ? t('drill.next') : t('dialog.startNext', { n: next + 1 }) }}
           <span class="ml-1" aria-hidden="true">⏎</span>
         </button>
-        <form method="dialog">
-          <button class="text-sm text-ink-muted underline hover:text-ink">
-            {{ t('dialog.breakdown') }}
-          </button>
-        </form>
       </div>
     </template>
   </dialog>

@@ -10,12 +10,6 @@ export function dayKey(d = new Date()): string {
   return d.toLocaleDateString('sv') // YYYY-MM-DD in local time
 }
 
-/** The local date for a dayKey, at noon so DST shifts can't push it into another day. */
-export function dateOf(key: string): Date {
-  const [y, m, d] = key.split('-').map(Number)
-  return new Date(y, m - 1, d, 12)
-}
-
 export interface Streak {
   /** Practised days in the current run (rest days don't count). */
   days: number
