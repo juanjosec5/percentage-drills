@@ -33,7 +33,7 @@ export const en = {
   'drill.correct': 'Correct',
   'drill.wrong': "Not quite: it's {answer}",
   'drill.youAnswered': 'You answered {input}',
-  'drill.voided': 'Paused · new problem',
+  'drill.voided': 'You left · new problem',
   'drill.next': 'Next',
   'drill.dailyDone': 'Daily set done',
   'drill.session': '{right}/{total} right',

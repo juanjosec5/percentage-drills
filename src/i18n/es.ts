@@ -36,7 +36,7 @@ export const es: Dictionary = {
   'drill.correct': '¡Correcto!',
   'drill.wrong': 'Uy, no: es {answer}',
   'drill.youAnswered': 'Respondiste {input}',
-  'drill.voided': 'Pausa · problema nuevo',
+  'drill.voided': 'Saliste · problema nuevo',
   'drill.next': 'Siguiente',
   'drill.dailyDone': '¡Reto diario listo!',
   'drill.session': '{right}/{total} bien',
