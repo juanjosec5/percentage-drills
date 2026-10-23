@@ -3,11 +3,15 @@ import { ref } from 'vue'
 
 import DrillView from './components/DrillView.vue'
 import HomeView from './components/HomeView.vue'
-import type { Mode } from './stores/progress'
+import PlacementView from './components/PlacementView.vue'
+import { useProgress, type Mode } from './stores/progress'
 
+const progress = useProgress()
 const drill = ref<{ mode: Mode; level: number; key: number } | null>(null)
+const placing = ref(false)
 
 function start(mode: Mode, level: number) {
+  progress.justPlaced = false
   drill.value = { mode, level, key: Date.now() }
 }
 </script>
@@ -20,5 +24,6 @@ function start(mode: Mode, level: number) {
     :start-level="drill.level"
     @exit="drill = null"
   />
-  <HomeView v-else @start="start" />
+  <PlacementView v-else-if="placing" @done="placing = false" />
+  <HomeView v-else @start="start" @place="placing = true" />
 </template>

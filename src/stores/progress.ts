@@ -10,6 +10,8 @@ import { dayKey, streakOf } from '@/engine/streak'
 import { HISTORY_CAP, KEY, normalize, SAVE_VERSION, type Day, type Saved } from './save'
 
 export const DAILY_COUNT = 10
+/** Review answers that turn a placed level (☆) into a mastered one (★). */
+export const CONFIRM = 3
 
 export type Mode = 'daily' | 'endless'
 
@@ -32,6 +34,9 @@ export const useProgress = defineStore('progress', () => {
   const history = ref(saved.history)
   const days = ref(saved.days)
   const settings = ref(saved.settings)
+  const placedUpTo = ref(saved.placedUpTo)
+  /** Not saved: tells Home the last jump came from placement, so it doesn't celebrate it. */
+  const justPlaced = ref(false)
 
   function snapshot(): Saved {
     return {
@@ -40,11 +45,12 @@ export const useProgress = defineStore('progress', () => {
       history: history.value,
       days: days.value,
       settings: settings.value,
+      placedUpTo: placedUpTo.value,
     }
   }
 
   watch(
-    [unlocked, history, days, settings],
+    [unlocked, history, days, settings, placedUpTo],
     () => {
       try {
         localStorage.setItem(KEY, JSON.stringify(snapshot()))
@@ -71,6 +77,26 @@ export const useProgress = defineStore('progress', () => {
   function statusOf(index: number): MasteryStatus {
     const level = LEVELS[index]
     return mastery(level, history.value[level.id] ?? [])
+  }
+
+  /** Placement is offered only before anything has been answered. */
+  const canPlace = computed(
+    () => unlocked.value === 0 && placedUpTo.value === 0 && !Object.keys(history.value).length,
+  )
+
+  /**
+   * A level skipped by placement shows as placed (☆) until CONFIRM review answers there count;
+   * then it is as mastered (★) as any other.
+   */
+  function isPlaced(index: number): boolean {
+    return index < placedUpTo.value && statusOf(index).counted < CONFIRM
+  }
+
+  function place(start: number) {
+    if (start <= unlocked.value) return
+    unlocked.value = start
+    placedUpTo.value = start
+    justPlaced.value = true
   }
 
   /** The last level has no next one to unlock, so its mastery is read directly. */
@@ -120,6 +146,7 @@ export const useProgress = defineStore('progress', () => {
     unlocked.value = 0
     history.value = {}
     days.value = {}
+    placedUpTo.value = 0
   }
 
   /** Replaces progress with an imported save; settings stay, as they do on reset. */
@@ -127,6 +154,7 @@ export const useProgress = defineStore('progress', () => {
     unlocked.value = saved.unlocked
     history.value = saved.history
     days.value = saved.days
+    placedUpTo.value = saved.placedUpTo
   }
 
   return {
@@ -134,6 +162,11 @@ export const useProgress = defineStore('progress', () => {
     history,
     days,
     settings,
+    placedUpTo,
+    justPlaced,
+    canPlace,
+    isPlaced,
+    place,
     today,
     dailyDone,
     streak,

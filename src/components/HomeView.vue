@@ -11,7 +11,7 @@ import { answersToMastery, GOAL } from '@/engine/mastery'
 import { dayKey, useProgress, type Mode } from '@/stores/progress'
 import { backupName, parseBackup } from '@/stores/save'
 
-const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
+const emit = defineEmits<{ start: [mode: Mode, level: number]; place: [] }>()
 const progress = useProgress()
 const { t } = useI18n()
 
@@ -31,7 +31,8 @@ const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastere
 // glass has poured full (module scope, so it survives the trip to the drill and back).
 const justOpened = ref<number | null>(null)
 onMounted(() => {
-  if (lastSeen.unlocked >= 0 && progress.unlocked > lastSeen.unlocked)
+  // A jump from placement isn't a level-up: no pop.
+  if (lastSeen.unlocked >= 0 && progress.unlocked > lastSeen.unlocked && !progress.justPlaced)
     setTimeout(() => (justOpened.value = progress.unlocked), OPEN_DELAY_MS)
   lastSeen.unlocked = progress.unlocked
 })
@@ -98,6 +99,7 @@ const OPEN_DELAY_MS = 1100
       :fill="levelFill"
       :level-key="progress.unlocked"
       :celebrate-label="t('drill.levelDone', { n: progress.unlocked })"
+      :quiet="progress.justPlaced"
       :label="
         progress.dailyDone
           ? t('home.endless')
@@ -107,14 +109,24 @@ const OPEN_DELAY_MS = 1100
       @click="emit('start', ctaMode, progress.unlocked)"
     />
 
-    <!-- Once the set is done the main button already starts endless practice. -->
-    <button
-      v-if="!progress.dailyDone"
-      class="-mt-2 block text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline"
-      @click="emit('start', 'endless', progress.unlocked)"
-    >
-      {{ t('home.endlessLink') }}
-    </button>
+    <div class="-mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted">
+      <!-- Once the set is done the main button already starts endless practice. -->
+      <button
+        v-if="!progress.dailyDone"
+        class="underline-offset-4 hover:text-ink hover:underline"
+        @click="emit('start', 'endless', progress.unlocked)"
+      >
+        {{ t('home.endlessLink') }}
+      </button>
+      <!-- Offered, never forced: the default stays Kumon's, start at the easy level. -->
+      <button
+        v-if="progress.canPlace"
+        class="underline-offset-4 hover:text-ink hover:underline"
+        @click="emit('place')"
+      >
+        {{ t('home.skipAhead') }}
+      </button>
+    </div>
 
     <ol class="space-y-1" :aria-label="t('home.levels')">
       <li v-for="(level, i) in LEVELS" :key="level.id">
@@ -138,7 +150,14 @@ const OPEN_DELAY_MS = 1100
             <MasteryMeter v-if="isCurrent(i)" :level-index="i" hide-count />
           </span>
           <span
-            v-if="isMastered(i)"
+            v-if="isMastered(i) && progress.isPlaced(i)"
+            role="img"
+            :aria-label="t('home.placed')"
+            class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-star text-sm text-ink-muted"
+            >☆</span
+          >
+          <span
+            v-else-if="isMastered(i)"
             :class="{ 'animate-pop': justOpened !== null && i === justOpened - 1 }"
             role="img"
             :aria-label="t('home.mastered')"

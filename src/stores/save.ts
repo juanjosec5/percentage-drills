@@ -6,7 +6,7 @@ import type { Answer } from '@/engine/mastery'
 
 /** Still `v1`: renaming the key would strand every existing save. The format version is inside. */
 export const KEY = 'percent-drills:v1'
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 /**
  * Answers kept per level. Mastery counts on-time right answers in here, so the cap sits far above
  * GOAL: even a learner who misses most of them reaches GOAL long before old ones drop off.
@@ -32,6 +32,8 @@ export interface Saved {
   history: Record<string, Answer[]>
   days: Record<string, Day>
   settings: Settings
+  /** Levels below this index were skipped by the placement ladder rather than practised. */
+  placedUpTo: number
 }
 
 const DEFAULT_SETTINGS: Settings = { showTimer: true }
@@ -47,6 +49,8 @@ const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isF
  */
 export const migrations: ((save: Raw) => Raw)[] = [
   // 1 → 2: v1 had no version field. The shape didn't change; v2 adds the field and validation.
+  (save) => save,
+  // 2 → 3: adds placedUpTo; normalize() fills in 0, since no earlier save was placed.
   (save) => save,
 ]
 
@@ -107,9 +111,12 @@ export function normalize(raw: unknown): Saved {
       if (day) days[key] = day
     }
 
+  const level = Math.min(Math.max(unlocked, 0), LEVELS.length - 1)
+  const placed = Number.isInteger(s.placedUpTo) ? (s.placedUpTo as number) : 0
   return {
     version: SAVE_VERSION,
-    unlocked: Math.min(Math.max(unlocked, 0), LEVELS.length - 1),
+    unlocked: level,
+    placedUpTo: Math.min(Math.max(placed, 0), level),
     history,
     days,
     settings: {
