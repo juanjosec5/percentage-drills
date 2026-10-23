@@ -26,7 +26,14 @@ export const en = {
   'home.levels': 'Levels',
   'home.rule':
     'Move up when your last {window} answers at a level are {accuracy}% right and under the target time. About a third of problems review earlier levels.',
-  'home.noAnswers': 'No answers yet · target {target}s',
+  'meter.start': 'Answer {window} to finish this level · target {target}s each',
+  'meter.toGo': plural(
+    '{n} more right answer within {target}s could finish this level',
+    '{n} more right answers within {target}s could finish this level',
+  ),
+  'meter.toGoShort': '{n} more to finish',
+  'meter.label': 'Recent answers: {right} right, {wrong} not right',
+  'meter.legend': '✓ filled: right, within target · ✓ outlined: right but slower · ✗ not right',
   'home.status': '{answered}/{window} answered · {summary} / target {target}s',
   'home.current': 'Current',
   'home.mastered': '★ Mastered',

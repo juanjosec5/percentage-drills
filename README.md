@@ -16,6 +16,9 @@ sessions every day, and you only move up once a step is both accurate and fast.
 - **Levels:** 12 levels, from "10% of round numbers" to a mixed review. You move up when your
   last 10 answers at your current level are at least 90% right and the median time is under that
   level's target. About 30% of problems review earlier levels.
+- **Mastery meter:** the current level shows your last 10 answers as pips (✓ filled = right and
+  within target, ✓ outlined = right but slower, ✗ = not right) and the fewest right answers that
+  could still finish it.
 - Answers accept a decimal comma or a point (`10,5` or `10.5`).
 - **Language:** English or Spanish, from the EN / ES switch at the top. It starts in Spanish when
   the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).

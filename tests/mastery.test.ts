@@ -1,5 +1,6 @@
 import { LEVELS } from '@/engine/levels'
-import { mastery, median, summarize, WINDOW } from '@/engine/mastery'
+import { answersToMastery, mastery, median, summarize, WINDOW, type Answer } from '@/engine/mastery'
+import { createRng } from '@/engine/rng'
 import { translate } from '@/i18n'
 
 const level = LEVELS[0] // target 5s
@@ -52,5 +53,47 @@ describe('summarize', () => {
 
   it('reads 0% and 0.0s before any answers', () => {
     expect(translate('en', summarize(mastery(level, [])))).toBe('0% right · typical time 0.0s')
+  })
+})
+
+describe('answersToMastery', () => {
+  const level = LEVELS[0]
+  const T = level.targetSeconds * 1000
+  const right = (ms = T / 2) => ({ correct: true, ms })
+  const wrong = { correct: false, ms: T / 2 }
+  const times = (n: number, a: Answer) => Array<Answer>(n).fill(a)
+
+  it('needs a full window from nothing', () => {
+    expect(answersToMastery(level, [])).toBe(WINDOW)
+  })
+
+  it('needs one more after nine fast right answers', () => {
+    expect(answersToMastery(level, times(9, right()))).toBe(1)
+  })
+
+  it('needs one more when the window passes but ended on a wrong answer', () => {
+    expect(answersToMastery(level, [...times(9, right()), wrong])).toBe(1)
+  })
+
+  it('counts out old wrong answers as they slide out of the window', () => {
+    expect(answersToMastery(level, [...times(3, wrong), ...times(7, right())])).toBe(2)
+  })
+
+  it('needs enough on-target answers to pull a slow median down', () => {
+    // Ten right at twice the target: five at target still leave the median at 1.5x.
+    expect(answersToMastery(level, times(10, right(2 * T)))).toBe(6)
+  })
+
+  it('always answers between 1 and WINDOW', () => {
+    const rng = createRng(3)
+    for (let i = 0; i < 200; i++) {
+      const recent = Array.from({ length: Math.floor(rng() * 14) }, () => ({
+        correct: rng() < 0.7,
+        ms: rng() * 3 * T,
+      }))
+      const k = answersToMastery(level, recent)
+      expect(k).toBeGreaterThanOrEqual(1)
+      expect(k).toBeLessThanOrEqual(WINDOW)
+    }
   })
 })

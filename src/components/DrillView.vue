@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
 import LevelCompleteDialog from './LevelCompleteDialog.vue'
+import MasteryMeter from './MasteryMeter.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
@@ -198,6 +199,13 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
         {{ t(progress.settings.showTimer ? 'drill.timerOn' : 'drill.timerOff') }}
       </button>
     </div>
+
+    <!-- Tracks the level being climbed; review answers from earlier levels don't move it. -->
+    <MasteryMeter
+      v-if="phase !== 'done' && level === progress.unlocked && !progress.allMastered"
+      :level-index="level"
+      compact
+    />
 
     <p v-if="voided" class="text-sm text-ink-muted" role="status">{{ t('drill.voided') }}</p>
 

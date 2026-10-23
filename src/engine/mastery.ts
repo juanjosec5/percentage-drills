@@ -42,6 +42,18 @@ export function mastery(level: Level, recent: Answer[]): MasteryStatus {
   }
 }
 
+/**
+ * Fewest further answers (each right, at exactly the target time) that would master the level:
+ * always 1..WINDOW. Never 0: a level only unlocks on a right answer, so even a window that
+ * already passes (but ended on a wrong one) needs one more.
+ */
+export function answersToMastery(level: Level, recent: Answer[]): number {
+  const atTarget: Answer = { correct: true, ms: level.targetSeconds * 1000 }
+  for (let k = 1; k < WINDOW; k++)
+    if (mastery(level, [...recent, ...Array(k).fill(atTarget)]).mastered) return k
+  return WINDOW
+}
+
 /** "90% right · median 3.2s": how a level is going, as shown on its card and in the popup. */
 export function summarize(status: MasteryStatus): Msg {
   return msg('mastery.summary', {
