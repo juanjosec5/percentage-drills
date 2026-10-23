@@ -84,6 +84,11 @@ export const useProgress = defineStore('progress', () => {
     return mastery(level, history.value[level.id] ?? [])
   }
 
+  /** The last level has no next one to unlock, so its mastery is read directly. */
+  const allMastered = computed(
+    () => unlocked.value === LEVELS.length - 1 && statusOf(unlocked.value).mastered,
+  )
+
   /** Records one answer. Returns true when it unlocked the next level. */
   function record(levelIndex: number, answer: Answer, mode: Mode): boolean {
     const id = LEVELS[levelIndex].id
@@ -115,5 +120,16 @@ export const useProgress = defineStore('progress', () => {
     days.value = {}
   }
 
-  return { unlocked, history, days, today, dailyDone, streak, statusOf, record, reset }
+  return {
+    unlocked,
+    history,
+    days,
+    today,
+    dailyDone,
+    streak,
+    allMastered,
+    statusOf,
+    record,
+    reset,
+  }
 })

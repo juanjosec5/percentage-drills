@@ -14,8 +14,8 @@ onMounted(() => requestAnimationFrame(() => (shown.value = true)))
 
 const pos = (pct: number) => `${(pct / props.breakdown.scale) * 100}%`
 
-/** Number of --rainbow-N colour tokens in style.css. */
-const RAINBOW = 6
+/** --rainbow-N tokens for added pieces, in turn. Blue first: a red first piece reads as "wrong". */
+const ADD_COLORS = [5, 2, 4, 6, 3, 1]
 /** Segments narrower than this share of the bar are too thin for a label (the tooltip still has it). */
 const LABEL_MIN_SHARE = 0.08
 
@@ -23,24 +23,28 @@ function fill(seg: Segment, i: number): string {
   if (seg.kind === 'base') return 'rgb(var(--palette-line))'
   if (seg.kind === 'remove')
     return 'repeating-linear-gradient(135deg, rgb(var(--palette-ink) / 0.3) 0 4px, rgb(var(--palette-ink) / 0.08) 4px 8px)'
-  // Each added piece takes the next colour of the rainbow.
   const adds = props.breakdown.segments
     .slice(0, i)
     .filter((s) => s.kind === 'add' || s.kind === 'part')
-  return `rgb(var(--rainbow-${(adds.length % RAINBOW) + 1}))`
+  return `rgb(var(--rainbow-${ADD_COLORS[adds.length % ADD_COLORS.length]}))`
 }
 
-const ticks = Array.from({ length: Math.floor(props.breakdown.scale / 10) + 1 }, (_, i) => i * 10)
+// No 10% grid: ten cells with one filled looked like a progress bar. Only mark 100% when the
+// bar runs past it.
+const ticks = props.breakdown.scale > 100 ? [100] : []
 </script>
 
 <template>
   <div class="space-y-4">
     <div>
+      <p class="mb-1.5 text-xs tracking-wide text-ink-muted uppercase">
+        How it works · each coloured piece is one step
+      </p>
       <div class="well relative h-10 overflow-hidden rounded-lg">
         <div
           v-for="t in ticks"
           :key="t"
-          class="absolute inset-y-0 w-px bg-line"
+          class="absolute inset-y-0 w-px bg-ink-muted/40"
           :style="{ left: pos(t) }"
         />
         <div

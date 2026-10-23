@@ -60,7 +60,7 @@ function continueOn() {
         </div>
         <button class="btn btn-primary w-full" autofocus @click="continueOn">
           {{ finishing ? 'Finish the daily set' : `Start level ${next + 1}` }}
-          ⏎
+          <span class="ml-1" aria-hidden="true">⏎</span>
         </button>
         <form method="dialog">
           <button class="text-sm text-ink-muted underline hover:text-ink">

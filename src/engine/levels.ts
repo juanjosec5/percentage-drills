@@ -49,7 +49,12 @@ function built(pct: number, base: number, pieces: Piece[], prompt = `${pct}% of 
   for (const p of pieces) {
     const from = p.sign > 0 ? cursor : cursor - p.pct
     const to = p.sign > 0 ? cursor + p.pct : cursor
-    segments.push({ from, to, kind: p.sign > 0 ? 'add' : 'remove', label: `${p.pct}%` })
+    segments.push({
+      from,
+      to,
+      kind: p.sign > 0 ? 'add' : 'remove',
+      label: `${p.sign > 0 ? '' : '−'}${p.pct}%`,
+    })
     cursor += p.sign * p.pct
   }
   const answer = percentOf(pct, base)

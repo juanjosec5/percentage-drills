@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { seconds } from '@/composables/useStopwatch'
 import { LEVELS } from '@/engine/levels'
@@ -13,6 +13,13 @@ const progress = useProgress()
 const ctaMode = computed<Mode>(() => (progress.dailyDone ? 'endless' : 'daily'))
 const currentStatus = computed(() => progress.statusOf(progress.unlocked))
 const isNewLevel = computed(() => currentStatus.value.answered === 0)
+const dailyLeft = computed(() => Math.max(0, DAILY_COUNT - progress.today.daily))
+const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
+const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
+
+// autofocus only fires on page load, not when coming back from a drill.
+const ctaEl = ref<HTMLButtonElement>()
+onMounted(() => ctaEl.value?.focus())
 
 function confirmReset() {
   if (confirm('Erase all progress and start again from level 1?')) progress.reset()
@@ -28,19 +35,19 @@ function confirmReset() {
     </header>
 
     <button
+      ref="ctaEl"
       class="btn-cta group block w-full px-6 py-6 text-left"
-      autofocus
       @click="emit('start', ctaMode, progress.unlocked)"
     >
       <span class="block text-3xl font-bold sm:text-4xl">
         {{ isNewLevel ? 'Start' : 'Continue' }} level {{ progress.unlocked + 1 }}
         <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
       </span>
-      <span class="mt-1 block text-white/80">
-        {{ LEVELS[progress.unlocked].title }} ·
+      <span class="mt-1 block text-white/90">
+        {{ progress.allMastered ? 'Every level mastered ★' : LEVELS[progress.unlocked].title }} ·
         {{
           ctaMode === 'daily'
-            ? `today's ${DAILY_COUNT - progress.today.daily} problems`
+            ? `today's ${dailyLeft} problem${dailyLeft === 1 ? '' : 's'}`
             : 'endless practice'
         }}
       </span>
@@ -97,8 +104,8 @@ function confirmReset() {
           <button
             class="card card-action relative flex w-full items-start gap-3 overflow-hidden p-4 text-left disabled:opacity-45 disabled:shadow-none"
             :class="{
-              'shadow-lift': i === progress.unlocked,
-              'border-cta/20 bg-mastered!': i < progress.unlocked,
+              'shadow-lift': isCurrent(i),
+              'border-cta/20 bg-mastered!': isMastered(i),
             }"
             :disabled="i > progress.unlocked"
             @click="emit('start', 'endless', i)"
@@ -106,26 +113,24 @@ function confirmReset() {
             <span class="w-6 shrink-0 font-mono text-ink-muted">{{ i + 1 }}</span>
             <span class="min-w-0 flex-1">
               <span
-                v-if="i === progress.unlocked"
+                v-if="isCurrent(i)"
                 class="absolute inset-y-0 left-0 w-1 bg-cta"
                 aria-hidden="true"
               />
               <span class="block font-medium">{{ level.title }}</span>
               <span class="block text-sm text-ink-muted">{{ level.strategy }}</span>
-              <span
-                v-if="i === progress.unlocked"
-                class="mt-1 block font-mono text-xs text-ink-muted"
-              >
-                {{ currentStatus.answered }}/{{ WINDOW }} answered ·
-                {{ summarize(currentStatus) }} / target {{ level.targetSeconds }}s
+              <span v-if="isCurrent(i)" class="mt-1 block font-mono text-xs text-ink-muted">
+                <template v-if="isNewLevel"
+                  >No answers yet · target {{ level.targetSeconds }}s</template
+                >
+                <template v-else>
+                  {{ currentStatus.answered }}/{{ WINDOW }} answered ·
+                  {{ summarize(currentStatus) }} / target {{ level.targetSeconds }}s
+                </template>
               </span>
             </span>
-            <span v-if="i === progress.unlocked" class="badge shrink-0 bg-cta/10 text-cta"
-              >Current</span
-            >
-            <span
-              v-else-if="i < progress.unlocked"
-              class="badge shrink-0 bg-star text-ink shadow-soft"
+            <span v-if="isCurrent(i)" class="badge shrink-0 bg-cta/10 text-cta">Current</span>
+            <span v-else-if="isMastered(i)" class="badge shrink-0 bg-star text-ink shadow-soft"
               >★ Mastered</span
             >
             <span v-else class="text-sm">🔒</span>
