@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { answers, cta, dayKey, open, stored } from './helpers'
 
 const SAVE = {
-  unlocked: 4,
+  unlocked: 3,
   history: { tens: answers(3) },
   days: { [dayKey()]: { answered: 10, correct: 9, totalMs: 9000, bestMs: 800, daily: 0 } },
 }
@@ -21,14 +21,14 @@ async function importFile(page: Page, contents: string) {
 
 test('export downloads the save, and importing it brings the progress back', async ({ page }) => {
   await open(page, SAVE)
-  await expect(cta(page)).toContainText('level 5')
+  await expect(cta(page)).toContainText('level 4')
 
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export' }).click()
   const file = await download
   expect(file.suggestedFilename()).toBe('percent-drills-2026-10-23.json')
   const contents = await readFile(await file.path(), 'utf8')
-  expect(JSON.parse(contents)).toMatchObject({ version: 3, placedUpTo: 0, ...SAVE })
+  expect(JSON.parse(contents)).toMatchObject({ version: 4, placedUpTo: 0, ...SAVE })
 
   page.once('dialog', (d) => d.accept())
   await page.getByRole('button', { name: 'Reset progress' }).click()
@@ -43,16 +43,16 @@ test('export downloads the save, and importing it brings the progress back', asy
   const reloaded = page.waitForEvent('load')
   await importFile(page, contents)
   await reloaded
-  await expect(cta(page)).toContainText('level 5')
+  await expect(cta(page)).toContainText('level 4')
   expect(question).toBe('Replace your progress with this file?')
-  expect(await stored(page)).toMatchObject({ version: 3, placedUpTo: 0, ...SAVE })
+  expect(await stored(page)).toMatchObject({ version: 4, placedUpTo: 0, ...SAVE })
 })
 
 test('declining the confirm keeps the current progress', async ({ page }) => {
   await open(page, SAVE)
   page.once('dialog', (d) => d.dismiss())
   await importFile(page, JSON.stringify({ unlocked: 0, history: {}, days: {} }))
-  await expect(cta(page)).toContainText('level 5')
+  await expect(cta(page)).toContainText('level 4')
   expect((await stored(page))?.unlocked ?? SAVE.unlocked).toBe(SAVE.unlocked)
 })
 
@@ -64,5 +64,5 @@ test('a file that is not a save is turned away', async ({ page }) => {
   expect(dialog.type()).toBe('alert')
   expect(dialog.message()).toBe('Not a Percent Drills file')
   await dialog.accept()
-  await expect(cta(page)).toContainText('level 5')
+  await expect(cta(page)).toContainText('level 4')
 })

@@ -5,11 +5,11 @@ import { answer, answers, cta, live, nextButton, open } from './helpers'
 // The celebration is the glass pouring full: it only happens with motion on.
 test.use({ reducedMotion: 'no-preference' })
 
-const DONE = '★ Level 4 complete!'
+const DONE = '★ Level 3 complete!'
 
-/** One answer short of finishing level 4, then right answers until it's done. */
+/** One answer short of finishing level 3, then right answers until it's done. */
 async function finishLevel(page: Page) {
-  await open(page, { unlocked: 3, history: { one: answers(9) }, days: {} })
+  await open(page, { unlocked: 2, history: { one: answers(9) }, days: {} })
   await page.getByRole('button', { name: 'Endless practice →' }).click()
   // Review problems don't count, so it can take a few.
   for (let i = 0; i < 10; i++) {
@@ -25,12 +25,12 @@ test('a level-up goes back Home, where the glass celebrates and the next row pop
 }) => {
   await finishLevel(page)
   await expect(page.locator('dialog')).toHaveCount(0)
-  await expect(live(page)).toContainText('Level 4 complete')
+  await expect(live(page)).toContainText('Level 3 complete')
 
   await expect(cta(page)).toBeVisible({ timeout: 3000 })
   await expect(cta(page)).toContainText(DONE)
-  await expect(cta(page)).toContainText('Start level 5', { timeout: 8000 })
-  await expect(page.getByRole('listitem').nth(4).getByRole('button')).toHaveClass(/animate-pop/)
+  await expect(cta(page)).toContainText('Start level 4', { timeout: 8000 })
+  await expect(page.getByRole('listitem').nth(3).getByRole('button')).toHaveClass(/animate-pop/)
 })
 
 test('Enter goes Home straight away', async ({ page }) => {

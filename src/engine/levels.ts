@@ -115,7 +115,6 @@ const FRACTIONS: Record<number, Msg> = {
 }
 
 type LevelId =
-  | 'ten-round'
   | 'ten-any'
   | 'five'
   | 'one'
@@ -137,14 +136,12 @@ const text = (id: Exclude<LevelId, 'mixed'>) => ({
 
 const LADDER: Level[] = [
   {
-    ...text('ten-round'),
-    targetSeconds: 5,
-    generate: (rng) => built(10, multiple(rng, 10, 20, 990), [TEN]),
-  },
-  {
+    // Big numbers, so moving the decimal point is the whole skill. Half are round (whole
+    // answers), half aren't (one decimal). The id predates the merge with "round numbers".
     ...text('ten-any'),
-    targetSeconds: 6,
-    generate: (rng) => built(10, int(rng, 11, 999), [TEN]),
+    targetSeconds: 7,
+    generate: (rng) =>
+      built(10, rng() < 0.5 ? multiple(rng, 10, 1000, 99_990) : int(rng, 1001, 99_999), [TEN]),
   },
   {
     ...text('five'),

@@ -1,5 +1,5 @@
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
-import { applyChange, percentOf, round2 } from '@/engine/math'
+import { applyChange, GROUP, percentOf, round2 } from '@/engine/math'
 import { createRng } from '@/engine/rng'
 import { LOCALES, translate, type Msg } from '@/i18n'
 
@@ -7,7 +7,8 @@ const en = (m: Msg) => translate('en', m)
 const es = (m: Msg) => translate('es', m)
 
 // Like solve() below, for Spanish prompts, so a translation can't change the maths.
-function solveEs(prompt: string): number {
+function solveEs(text: string): number {
+  const prompt = text.replaceAll(GROUP, '')
   const num = (s: string) => Number(s.replace(',', '.'))
   let m = prompt.match(/^([\d,]+)% de ([\d,]+)$/)
   if (m) return percentOf(num(m[1]), num(m[2]))
@@ -27,7 +28,8 @@ const texts = (p: Problem): Msg[] => [
 ]
 
 // Re-derives the answer from the prompt text alone, independently of the generators.
-function solve(prompt: string): number {
+function solve(text: string): number {
+  const prompt = text.replaceAll(GROUP, '')
   let m = prompt.match(/^([\d.]+)% of ([\d.]+)$/)
   if (m) return percentOf(Number(m[1]), Number(m[2]))
   m = prompt.match(/^([\d.]+) is what % of ([\d.]+)\?$/)
@@ -74,6 +76,20 @@ describe.each(LEVELS.map((level, i) => [level.id, level, i] as const))('level %s
       expect(en(b.result), label).toMatch(/[\d.]+%?$/)
       expect(es(b.result), label).toMatch(/[\d,]+(\s%)?$/)
     }
+  })
+})
+
+describe('10%', () => {
+  it('uses numbers in the thousands, round or not', () => {
+    const rng = createRng(5)
+    const problems = Array.from({ length: 300 }, () => LEVELS[0].generate(rng))
+    for (const p of problems) {
+      expect(p.breakdown.base).toBeGreaterThanOrEqual(1000)
+      expect(p.breakdown.base).toBeLessThanOrEqual(99_999)
+    }
+    const whole = problems.filter((p) => Number.isInteger(p.answer)).length
+    expect(whole).toBeGreaterThan(100)
+    expect(whole).toBeLessThan(220)
   })
 })
 

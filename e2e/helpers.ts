@@ -3,6 +3,8 @@ import { expect, type Page } from '@playwright/test'
 
 export const KEY = 'percent-drills:v1'
 export const LANG_KEY = 'percent-drills:lang'
+/** Stamped on every seed, so seeds use today's level indexes instead of being migrated. */
+export const SAVE_VERSION = 4
 
 /**
  * Noon on Friday 2026-10-23 in Bogotá (the configured timezone). The drill seeds its problems
@@ -35,7 +37,8 @@ export interface Seed {
 export async function open(page: Page, saved?: Seed | string) {
   await page.clock.setFixedTime(NOW)
   if (saved !== undefined) {
-    const raw = typeof saved === 'string' ? saved : JSON.stringify(saved)
+    const raw =
+      typeof saved === 'string' ? saved : JSON.stringify({ version: SAVE_VERSION, ...saved })
     await page.addInitScript(
       ([key, value]) => {
         if (sessionStorage.getItem('e2e-seeded')) return
@@ -58,7 +61,9 @@ export const live = (page: Page) => page.locator('[aria-live]')
 export const nextButton = (page: Page) => page.getByRole('button', { name: /^(Next|Siguiente)$/ })
 
 /** Works out the answer to an English or Spanish prompt from its text alone. */
-export function solve(prompt: string): number {
+export function solve(text: string): number {
+  // Thousands are grouped with a narrow no-break space (43 720).
+  const prompt = text.replaceAll('\u202f', '')
   const n = (s: string) => Number(s.replace(',', '.'))
   const r2 = (x: number) => Math.round(x * 100) / 100
   let m

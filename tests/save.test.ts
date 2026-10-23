@@ -32,14 +32,29 @@ describe('versions', () => {
     expect(versionOf({ version: 2 })).toBe(2)
   })
 
-  it('migrates v1 → v2 without changing the data', () => {
+  it('migrates v1 → v3 without changing the data', () => {
     expect(migrations[0](structuredClone(V1))).toEqual(V1)
-    expect(migrate(structuredClone(V1))).toEqual(V1)
+    expect(migrations[1](structuredClone(V1))).toEqual(V1)
   })
 
-  it('loads a v1 save unchanged, stamped with the current version', () => {
+  it('migrates v3 → v4: the two 10% levels merged, so later levels move down one', () => {
+    const v4 = migrations[2]
+    expect(v4({ unlocked: 0, placedUpTo: 0 })).toMatchObject({ unlocked: 0, placedUpTo: 0 })
+    // On "10% · any number": same level, now index 0, with its history kept.
+    expect(v4({ unlocked: 1, history: { 'ten-any': [R] } })).toMatchObject({
+      unlocked: 0,
+      history: { 'ten-any': [R] },
+    })
+    expect(v4({ unlocked: 5, placedUpTo: 4 })).toMatchObject({ unlocked: 4, placedUpTo: 3 })
+    expect(v4({ history: { 'ten-round': [R], one: [R] } }).history).toEqual({ one: [R] })
+    // Junk passes through for normalize() to repair.
+    expect(v4({ unlocked: 'x', history: 'y' })).toMatchObject({ unlocked: 'x', history: 'y' })
+  })
+
+  it('loads a v1 save, stamped with the current version and its level moved down one', () => {
     expect(normalize(structuredClone(V1))).toEqual({
       ...V1,
+      unlocked: V1.unlocked - 1,
       version: SAVE_VERSION,
       placedUpTo: 0,
       settings: { ...V1.settings, offeredPlacement: false },
@@ -114,7 +129,9 @@ describe('normalize: corrupt entries', () => {
   })
 
   it('treats non-object history, days and settings as empty', () => {
-    expect(normalize({ unlocked: 2, history: [R], days: [DAY], settings: 'x' })).toEqual({
+    expect(
+      normalize({ version: SAVE_VERSION, unlocked: 2, history: [R], days: [DAY], settings: 'x' }),
+    ).toEqual({
       version: SAVE_VERSION,
       unlocked: 2,
       history: {},
@@ -134,6 +151,7 @@ describe('backups', () => {
   it('imports a v1-shaped file too', () => {
     expect(parseBackup(JSON.stringify(V1))).toEqual({
       ...V1,
+      unlocked: V1.unlocked - 1,
       version: SAVE_VERSION,
       placedUpTo: 0,
       settings: { ...V1.settings, offeredPlacement: false },
@@ -157,8 +175,9 @@ describe('backups', () => {
 
 describe('placedUpTo', () => {
   it('defaults to 0 and never exceeds the unlocked level', () => {
-    expect(normalize({ unlocked: 2 }).placedUpTo).toBe(0)
-    expect(normalize({ unlocked: 2, placedUpTo: 5 }).placedUpTo).toBe(2)
-    expect(normalize({ unlocked: 4, placedUpTo: 'x' }).placedUpTo).toBe(0)
+    const v = SAVE_VERSION
+    expect(normalize({ version: v, unlocked: 2 }).placedUpTo).toBe(0)
+    expect(normalize({ version: v, unlocked: 2, placedUpTo: 5 }).placedUpTo).toBe(2)
+    expect(normalize({ version: v, unlocked: 4, placedUpTo: 'x' }).placedUpTo).toBe(0)
   })
 })
