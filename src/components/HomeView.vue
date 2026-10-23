@@ -2,10 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
+import MasteryMeter from './MasteryMeter.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds } from '@/composables/useStopwatch'
 import { LEVELS } from '@/engine/levels'
-import { PASS_ACCURACY, summarize, WINDOW } from '@/engine/mastery'
+import { PASS_ACCURACY, WINDOW } from '@/engine/mastery'
 import { msg } from '@/i18n'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
@@ -122,18 +123,7 @@ function confirmReset() {
               />
               <span class="block font-medium">{{ t(level.title) }}</span>
               <span class="block text-sm text-ink-muted">{{ t(level.strategy) }}</span>
-              <span v-if="isCurrent(i)" class="mt-1 block font-mono text-xs text-ink-muted">
-                {{
-                  isNewLevel
-                    ? t('home.noAnswers', { target: level.targetSeconds })
-                    : t('home.status', {
-                        answered: currentStatus.answered,
-                        window: WINDOW,
-                        summary: summarize(currentStatus),
-                        target: level.targetSeconds,
-                      })
-                }}
-              </span>
+              <MasteryMeter v-if="isCurrent(i)" :level-index="i" />
             </span>
             <span v-if="isCurrent(i)" class="badge shrink-0 bg-cta/10 text-cta">{{
               t('home.current')

@@ -26,7 +26,14 @@ export const es: Dictionary = {
   'home.levels': 'Niveles',
   'home.rule':
     'Subes de nivel cuando tus últimas {window} respuestas en un nivel tienen un {accuracy} % de aciertos y van por debajo del tiempo meta. Cerca de un tercio de los problemas repasa niveles anteriores.',
-  'home.noAnswers': 'Aún sin respuestas · meta {target} s',
+  'meter.start': 'Responde {window} para terminar este nivel · meta {target} s cada una',
+  'meter.toGo': plural(
+    '{n} respuesta correcta más en {target} s o menos podría terminar este nivel',
+    '{n} respuestas correctas más en {target} s o menos podrían terminar este nivel',
+  ),
+  'meter.toGoShort': '{n} más para terminar',
+  'meter.label': 'Respuestas recientes: {right} bien, {wrong} mal',
+  'meter.legend': '✓ relleno: bien y a tiempo · ✓ con borde: bien pero lento · ✗ mal',
   'home.status': '{answered}/{window} respondidas · {summary} / meta {target} s',
   'home.current': 'Actual',
   'home.mastered': '★ Dominado',
