@@ -11,15 +11,15 @@
   --palette-ink-muted: 112 104 92; /* #70685C */
   --palette-cta: 116 70 214; /* deep violet #7446D6: the main Start button only */
   --palette-mastered: 239 234 248; /* lavender #EFEAF8: a hint of the violet on ivory */
-  --palette-correct: 30 135 80; /* #1E8750 */
+  --palette-correct: 26 122 72; /* #1A7A48: 5:1 on the panel (AA) */
   --palette-wrong: 196 58 50; /* #C43A32 */
 
   --rainbow-1: 239 83 80; /* red #EF5350 */
   --rainbow-2: 255 152 67; /* orange #FF9843 */
   --rainbow-3: 250 204 21; /* yellow #FACC15 */
   --rainbow-4: 74 190 110; /* green #4ABE6E */
-  --rainbow-5: 66 133 244; /* blue #4285F4 */
-  --rainbow-6: 147 102 240; /* violet #9366F0 */
+  --rainbow-5: 92 149 245; /* blue #5C95F5: light enough for ink labels (AA) */
+  --rainbow-6: 160 124 242; /* violet #A07CF2: light enough for ink labels (AA) */
 
   --palette-shadow: 92 70 38;
 
@@ -49,31 +49,41 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --animate-rainbow: rainbow-shift 6s linear infinite;
+  /* Sweeps once on mount, then holds still: looping motion beside the problem distracts, and
+     WCAG 2.2.2 needs a pause control for anything that moves past 5s. */
+  --animate-rainbow: rainbow-shift 2.5s ease-out;
   --animate-glow: rainbow-glow 1.4s ease-out;
   --animate-pop: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  /* Breakdown pieces fade in rather than grow, so the bar doesn't read as filling up. */
+  --animate-fade: fade 0.4s ease-out both;
 
   @keyframes rainbow-shift {
     to {
       background-position: 200% 0;
     }
   }
-  /* A halo that runs once through the spectrum, then settles back to the normal shadow. */
+  /* A halo that runs once through the spectrum, then settles back to the normal shadow. It
+     starts on green and skips red, which would read as "wrong" on a right answer. */
   @keyframes rainbow-glow {
     0% {
-      box-shadow: 0 0 0 0 rgb(var(--rainbow-1) / 0.6);
+      box-shadow: 0 0 0 0 rgb(var(--rainbow-4) / 0.6);
     }
     20% {
-      box-shadow: 0 0 30px 8px rgb(var(--rainbow-2) / 0.6);
+      box-shadow: 0 0 30px 8px rgb(var(--rainbow-4) / 0.6);
     }
     40% {
-      box-shadow: 0 0 34px 9px rgb(var(--rainbow-4) / 0.55);
+      box-shadow: 0 0 34px 9px rgb(var(--rainbow-5) / 0.55);
     }
     60% {
-      box-shadow: 0 0 34px 9px rgb(var(--rainbow-5) / 0.5);
+      box-shadow: 0 0 34px 9px rgb(var(--rainbow-6) / 0.5);
     }
     80% {
-      box-shadow: 0 0 26px 6px rgb(var(--rainbow-6) / 0.4);
+      box-shadow: 0 0 26px 6px rgb(var(--rainbow-3) / 0.4);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
     }
   }
   @keyframes pop {

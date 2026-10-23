@@ -1,5 +1,7 @@
 import { onBeforeUnmount, ref } from 'vue'
 
+import { msg, type Msg } from '@/i18n'
+
 /** A stopwatch that ticks every animation frame while running. */
 export function useStopwatch() {
   const ms = ref(0)
@@ -30,6 +32,7 @@ export function useStopwatch() {
   return { ms, start, stop }
 }
 
-export function seconds(ms: number): string {
-  return (ms / 1000).toFixed(1) + 's'
+/** "1.2s" / "1,2 s", once translated. */
+export function seconds(ms: number): Msg {
+  return msg('seconds', { s: ms / 1000 })
 }

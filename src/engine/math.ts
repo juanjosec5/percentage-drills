@@ -18,9 +18,24 @@ export function applyChange(base: number, pct: number): number {
   return round2(base * (1 + pct / 100))
 }
 
-/** Display a number the way people say it: no trailing zeros. */
-export function fmt(n: number): string {
-  return String(round2(n))
+const formatters = new Map<string, Intl.NumberFormat>()
+
+/**
+ * Display a number the way people say it: no trailing zeros (unless `digits` fixes them) and the
+ * locale's decimal mark (10.5, 10,5). No thousands separator: parseAnswer would read 1,000 as 1.
+ */
+export function fmt(n: number, lang = 'en', digits?: number): string {
+  const id = `${lang}:${digits}`
+  let f = formatters.get(id)
+  if (!f) {
+    f = new Intl.NumberFormat(lang, {
+      useGrouping: false,
+      minimumFractionDigits: digits ?? 0,
+      maximumFractionDigits: digits ?? 2,
+    })
+    formatters.set(id, f)
+  }
+  return f.format(digits === undefined ? round2(n) : n)
 }
 
 /**

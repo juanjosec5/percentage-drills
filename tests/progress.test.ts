@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 
+import { LEVELS } from '@/engine/levels'
 import { WINDOW } from '@/engine/mastery'
 import { useProgress } from '@/stores/progress'
 
@@ -30,5 +31,18 @@ describe('progress.record', () => {
     progress.unlocked = 2
     for (let i = 0; i < WINDOW; i++) expect(progress.record(0, fast(true), 'endless')).toBe(false)
     expect(progress.unlocked).toBe(2)
+  })
+})
+
+describe('progress.allMastered', () => {
+  it('turns on once the last level is mastered, which has nothing to unlock', () => {
+    const progress = useProgress()
+    const last = LEVELS.length - 1
+    progress.unlocked = last
+    expect(progress.allMastered).toBe(false)
+    for (let i = 0; i < WINDOW; i++)
+      expect(progress.record(last, fast(true), 'endless')).toBe(false)
+    expect(progress.unlocked).toBe(last)
+    expect(progress.allMastered).toBe(true)
   })
 })
