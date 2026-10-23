@@ -5,7 +5,9 @@ sessions every day, and you only move up once a step is both accurate and fast.
 
 ## How it works
 
-- **Daily set:** 10 problems a day. Finishing it keeps your streak going.
+- **Daily set:** 10 problems a day.
+- **Streak:** any 10 answers in a day (daily set or endless) keep it going. One missed day a week
+  is forgiven automatically; two missed days in a row end it.
 - **Endless:** a new problem every time you answer one, for as long as you like.
 - **Timer:** every problem is timed from when it appears to when you submit, and the level's
   target time is shown from the start. "Timer: off" hides the running clock (the time still

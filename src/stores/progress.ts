@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 
 import { LEVELS } from '@/engine/levels'
 import { mastery, type Answer, type MasteryStatus } from '@/engine/mastery'
+import { dayKey, streakOf } from '@/engine/streak'
 
 export const DAILY_COUNT = 10
 const KEY = 'percent-drills:v1'
@@ -35,9 +36,7 @@ export interface Saved {
 
 const DEFAULT_SETTINGS: Settings = { showTimer: true }
 
-export function dayKey(d = new Date()): string {
-  return d.toLocaleDateString('sv') // YYYY-MM-DD in local time
-}
+export { dayKey }
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -101,17 +100,14 @@ export const useProgress = defineStore('progress', () => {
   )
   const dailyDone = computed(() => today.value.daily >= DAILY_COUNT)
 
-  /** Consecutive days with the daily set finished, counting back from today (or yesterday). */
-  const streak = computed(() => {
-    const d = new Date()
-    if (!dailyDone.value) d.setDate(d.getDate() - 1)
-    let n = 0
-    while ((days.value[dayKey(d)]?.daily ?? 0) >= DAILY_COUNT) {
-      n++
-      d.setDate(d.getDate() - 1)
-    }
-    return n
-  })
+  /**
+   * Any DAILY_COUNT answers make a day practised, in either mode: practising a level from its
+   * card counts as much as the daily set does.
+   */
+  const streakInfo = computed(() =>
+    streakOf((key) => (days.value[key]?.answered ?? 0) >= DAILY_COUNT),
+  )
+  const streak = computed(() => streakInfo.value.days)
 
   function statusOf(index: number): MasteryStatus {
     const level = LEVELS[index]
@@ -167,6 +163,7 @@ export const useProgress = defineStore('progress', () => {
     today,
     dailyDone,
     streak,
+    streakInfo,
     allMastered,
     statusOf,
     record,

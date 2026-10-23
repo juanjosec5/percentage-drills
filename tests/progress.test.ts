@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 
 import { LEVELS } from '@/engine/levels'
 import { WINDOW } from '@/engine/mastery'
-import { normalize, useProgress } from '@/stores/progress'
+import { DAILY_COUNT, normalize, useProgress } from '@/stores/progress'
 
 const fast = (correct: boolean) => ({ correct, ms: 1000 })
 
@@ -97,5 +97,14 @@ describe('settings', () => {
     progress.reset()
     expect(progress.unlocked).toBe(0)
     expect(progress.settings.showTimer).toBe(false)
+  })
+})
+
+describe('progress.streak', () => {
+  it('counts a day of endless practice, not only the daily set', () => {
+    const progress = useProgress()
+    for (let i = 0; i < DAILY_COUNT; i++) progress.record(0, fast(true), 'endless')
+    expect(progress.today.daily).toBe(0)
+    expect(progress.streak).toBe(1)
   })
 })
