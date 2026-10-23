@@ -9,8 +9,11 @@ import { dayKey, streakOf } from '@/engine/streak'
 
 export const DAILY_COUNT = 10
 const KEY = 'percent-drills:v1'
-/** Answers kept per level; mastery only reads the last WINDOW. */
-const HISTORY_CAP = 50
+/**
+ * Answers kept per level. Mastery counts on-time right answers in here, so the cap sits far above
+ * GOAL: even a learner who misses most of them reaches GOAL long before old ones drop off.
+ */
+const HISTORY_CAP = 200
 
 export type Mode = 'daily' | 'endless'
 

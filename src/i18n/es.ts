@@ -21,8 +21,9 @@ export const es: Dictionary = {
   'home.reset': 'Borrar progreso',
   'home.resetConfirm': '¿Borrar todo tu progreso?',
 
+  'drill.reviewTag': '↺ repaso',
   'meter.toGoShort': '{n} más',
-  'meter.label': 'Últimas {window}: {right} bien, {wrong} mal',
+  'meter.label': '{done} de {goal}',
 
   'drill.back': 'Volver',
   'drill.average': 'promedio {time}',
