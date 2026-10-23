@@ -19,6 +19,15 @@ describe('percent math', () => {
     expect(fmt(21)).toBe('21')
     expect(fmt(0.1 + 0.2)).toBe('0.3')
   })
+
+  it('uses the locale decimal mark, with no thousands separator', () => {
+    expect(fmt(63.5, 'es')).toBe('63,5')
+    expect(fmt(1.2, 'es', 1)).toBe('1,2')
+    expect(fmt(3, 'en', 1)).toBe('3.0')
+    // parseAnswer would read "1,000" as 1.
+    expect(fmt(1000)).toBe('1000')
+    expect(fmt(12345.5, 'es')).toBe('12345,5')
+  })
 })
 
 describe('answer parsing', () => {

@@ -14,8 +14,11 @@ sessions every day, and you only move up once a step is both accurate and fast.
   last 10 answers at your current level are at least 90% right and the median time is under that
   level's target. About 30% of problems review earlier levels.
 - Answers accept a decimal comma or a point (`10,5` or `10.5`).
+- **Language:** English or Spanish, from the EN / ES switch at the top. It starts in Spanish when
+  the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).
 
-Progress is saved in the browser's localStorage. There is no backend.
+Progress and the language choice are saved in the browser's localStorage
+(`percent-drills:v1` and `percent-drills:lang`). There is no backend.
 
 ## Setup
 
@@ -38,14 +41,19 @@ npm run dev
 ```
 src/
   engine/       Pure TypeScript, no Vue: level generators, math, grading, mastery rule
+  i18n/         Pure TypeScript: the English and Spanish dictionaries and the translator
   stores/       Pinia store for progress (localStorage)
-  composables/  Stopwatch
+  composables/  Stopwatch, current language
   components/   HomeView, DrillView, BreakdownBar, LevelCompleteDialog
 tests/          Vitest tests for the engine
 ```
 
 To add or tune a level, edit `src/engine/levels.ts`. Each level has a generator that returns the
 prompt, the answer and its breakdown, plus a target time per problem. The level tests re-derive
-every answer from the prompt text, so a wrong generator fails `npm test`.
+every answer from the prompt text, in both languages, so a wrong generator fails `npm test`.
+
+The engine never builds display text. It returns messages (a dictionary key plus raw numbers),
+and the UI renders them in the current language. To add or change copy, edit `src/i18n/en.ts`
+and `src/i18n/es.ts`; a key missing from Spanish fails the type-check.
 
 Stack: Vue 3, TypeScript, Vite, Pinia, Tailwind CSS v4, Vitest.

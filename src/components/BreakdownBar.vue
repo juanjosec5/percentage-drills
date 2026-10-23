@@ -3,9 +3,11 @@
 // calculation, each with its value; then the steps written out.
 import { computed } from 'vue'
 
+import { useI18n } from '@/composables/useI18n'
 import type { Breakdown, Segment } from '@/engine/levels'
 
 const props = defineProps<{ breakdown: Breakdown }>()
+const { t } = useI18n()
 
 /** --rainbow-N tokens for added pieces, in turn. Blue first: a red first piece reads as "wrong". */
 const ADD_COLORS = [5, 2, 4, 6, 3, 1]
@@ -43,7 +45,7 @@ const swatches = computed(() => {
       v-if="showBar"
       class="well relative h-10 overflow-hidden rounded-lg"
       role="img"
-      :aria-label="breakdown.segments.map((s) => s.label).join(', ')"
+      :aria-label="breakdown.segments.map((s) => t(s.label)).join(', ')"
     >
       <div
         v-for="(seg, i) in breakdown.segments"
@@ -56,10 +58,10 @@ const swatches = computed(() => {
           animationDelay: `${i * 250}ms`,
         }"
         :class="{ 'justify-start! pl-2': seg.kind === 'base' }"
-        :title="seg.label"
+        :title="t(seg.label)"
       >
         <span v-if="(seg.to - seg.from) / extent >= LABEL_MIN_SHARE" class="px-1">{{
-          seg.label
+          t(seg.label)
         }}</span>
       </div>
     </div>
@@ -72,9 +74,9 @@ const swatches = computed(() => {
           :style="{ background: swatches[i] }"
           aria-hidden="true"
         />
-        {{ step }}
+        {{ t(step) }}
       </li>
     </ol>
-    <p class="font-mono text-base font-semibold">{{ breakdown.result }}</p>
+    <p class="font-mono text-base font-semibold">{{ t(breakdown.result) }}</p>
   </div>
 </template>

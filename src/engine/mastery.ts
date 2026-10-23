@@ -1,5 +1,7 @@
 // Kumon-style mastery: you move up only when a level is both accurate and fast.
 // Repeating a level until it's automatic is the point, not a failure.
+import { msg, type Msg } from '@/i18n'
+
 import type { Level } from './levels'
 
 /** How many recent answers at a level decide mastery. */
@@ -41,6 +43,9 @@ export function mastery(level: Level, recent: Answer[]): MasteryStatus {
 }
 
 /** "90% right · median 3.2s": how a level is going, as shown on its card and in the popup. */
-export function summarize(status: MasteryStatus): string {
-  return `${Math.round(status.accuracy * 100)}% right · median ${status.medianSeconds.toFixed(1)}s`
+export function summarize(status: MasteryStatus): Msg {
+  return msg('mastery.summary', {
+    accuracy: Math.round(status.accuracy * 100),
+    median: status.medianSeconds,
+  })
 }

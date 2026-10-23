@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import LanguageToggle from './LanguageToggle.vue'
+import { useI18n } from '@/composables/useI18n'
 import { seconds } from '@/composables/useStopwatch'
 import { LEVELS } from '@/engine/levels'
 import { PASS_ACCURACY, summarize, WINDOW } from '@/engine/mastery'
+import { msg } from '@/i18n'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
 
 const emit = defineEmits<{ start: [mode: Mode, level: number] }>()
 const progress = useProgress()
+const { t } = useI18n()
 
 // The main button: today's daily set first (it keeps the streak), endless practice after.
 const ctaMode = computed<Mode>(() => (progress.dailyDone ? 'endless' : 'daily'))
@@ -22,16 +26,19 @@ const ctaEl = ref<HTMLButtonElement>()
 onMounted(() => ctaEl.value?.focus())
 
 function confirmReset() {
-  if (confirm('Erase all progress and start again from level 1?')) progress.reset()
+  if (confirm(t('home.resetConfirm'))) progress.reset()
 }
 </script>
 
 <template>
   <div class="mx-auto max-w-xl space-y-5 px-4 py-8">
     <header>
-      <h1 class="text-3xl font-bold">Percent Drills</h1>
+      <div class="flex items-start justify-between gap-3">
+        <h1 class="text-3xl font-bold">{{ t('app.title') }}</h1>
+        <LanguageToggle class="mt-1" />
+      </div>
       <div class="rainbow mt-2 h-1.5 w-28 animate-rainbow rounded-full" />
-      <p class="mt-1 text-ink-muted">A few quick percentages a day, one small step at a time.</p>
+      <p class="mt-1 text-ink-muted">{{ t('app.tagline') }}</p>
     </header>
 
     <button
@@ -40,16 +47,12 @@ function confirmReset() {
       @click="emit('start', ctaMode, progress.unlocked)"
     >
       <span class="block text-3xl font-bold sm:text-4xl">
-        {{ isNewLevel ? 'Start' : 'Continue' }} level {{ progress.unlocked + 1 }}
+        {{ t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 }) }}
         <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
       </span>
       <span class="mt-1 block text-white/90">
-        {{ progress.allMastered ? 'Every level mastered ★' : LEVELS[progress.unlocked].title }} ·
-        {{
-          ctaMode === 'daily'
-            ? `today's ${dailyLeft} problem${dailyLeft === 1 ? '' : 's'}`
-            : 'endless practice'
-        }}
+        {{ t(progress.allMastered ? 'home.allMastered' : LEVELS[progress.unlocked].title) }} ·
+        {{ ctaMode === 'daily' ? t('home.dailyLeft', { n: dailyLeft }) : t('home.endless') }}
       </span>
     </button>
 
@@ -59,45 +62,45 @@ function confirmReset() {
         :disabled="progress.dailyDone"
         @click="emit('start', 'daily', progress.unlocked)"
       >
-        Daily set ·
         {{
-          progress.dailyDone
-            ? 'done for today ✓'
-            : `${Math.min(progress.today.daily, DAILY_COUNT)}/${DAILY_COUNT}`
+          t('home.dailySet', {
+            progress: progress.dailyDone
+              ? msg('home.dailyDone')
+              : [Math.min(progress.today.daily, DAILY_COUNT), '/', DAILY_COUNT],
+          })
         }}
       </button>
       <button
         class="underline-offset-4 hover:text-ink hover:underline"
         @click="emit('start', 'endless', progress.unlocked)"
       >
-        Endless practice →
+        {{ t('home.endlessLink') }}
       </button>
     </nav>
 
     <section class="grid grid-cols-3 gap-3 text-center">
       <div class="card p-3">
         <p class="text-2xl font-semibold">{{ progress.streak }}</p>
-        <p class="text-xs text-ink-muted">day streak</p>
+        <p class="text-xs text-ink-muted">{{ t('home.streak') }}</p>
       </div>
       <div class="card p-3">
         <p class="text-2xl font-semibold">
           {{ progress.today.correct }}/{{ progress.today.answered }}
         </p>
-        <p class="text-xs text-ink-muted">right today</p>
+        <p class="text-xs text-ink-muted">{{ t('home.rightToday') }}</p>
       </div>
       <div class="card p-3">
         <p class="text-2xl font-semibold">
-          {{ progress.today.bestMs === null ? '–' : seconds(progress.today.bestMs) }}
+          {{ progress.today.bestMs === null ? '–' : t(seconds(progress.today.bestMs)) }}
         </p>
-        <p class="text-xs text-ink-muted">fastest today</p>
+        <p class="text-xs text-ink-muted">{{ t('home.fastestToday') }}</p>
       </div>
     </section>
 
     <section class="space-y-2">
-      <h2 class="font-semibold">Levels</h2>
+      <h2 class="font-semibold">{{ t('home.levels') }}</h2>
       <p class="text-sm text-ink-muted">
-        Move up when your last {{ WINDOW }} answers at a level are {{ PASS_ACCURACY * 100 }}% right
-        and under the target time. About a third of problems review earlier levels.
+        {{ t('home.rule', { window: WINDOW, accuracy: PASS_ACCURACY * 100 }) }}
       </p>
       <ol class="space-y-2">
         <li v-for="(level, i) in LEVELS" :key="level.id">
@@ -117,28 +120,35 @@ function confirmReset() {
                 class="absolute inset-y-0 left-0 w-1 bg-cta"
                 aria-hidden="true"
               />
-              <span class="block font-medium">{{ level.title }}</span>
-              <span class="block text-sm text-ink-muted">{{ level.strategy }}</span>
+              <span class="block font-medium">{{ t(level.title) }}</span>
+              <span class="block text-sm text-ink-muted">{{ t(level.strategy) }}</span>
               <span v-if="isCurrent(i)" class="mt-1 block font-mono text-xs text-ink-muted">
-                <template v-if="isNewLevel"
-                  >No answers yet · target {{ level.targetSeconds }}s</template
-                >
-                <template v-else>
-                  {{ currentStatus.answered }}/{{ WINDOW }} answered ·
-                  {{ summarize(currentStatus) }} / target {{ level.targetSeconds }}s
-                </template>
+                {{
+                  isNewLevel
+                    ? t('home.noAnswers', { target: level.targetSeconds })
+                    : t('home.status', {
+                        answered: currentStatus.answered,
+                        window: WINDOW,
+                        summary: summarize(currentStatus),
+                        target: level.targetSeconds,
+                      })
+                }}
               </span>
             </span>
-            <span v-if="isCurrent(i)" class="badge shrink-0 bg-cta/10 text-cta">Current</span>
-            <span v-else-if="isMastered(i)" class="badge shrink-0 bg-star text-ink shadow-soft"
-              >★ Mastered</span
-            >
+            <span v-if="isCurrent(i)" class="badge shrink-0 bg-cta/10 text-cta">{{
+              t('home.current')
+            }}</span>
+            <span v-else-if="isMastered(i)" class="badge shrink-0 bg-star text-ink shadow-soft">{{
+              t('home.mastered')
+            }}</span>
             <span v-else class="text-sm">🔒</span>
           </button>
         </li>
       </ol>
     </section>
 
-    <button class="text-xs text-ink-muted underline" @click="confirmReset">Reset progress</button>
+    <button class="text-xs text-ink-muted underline" @click="confirmReset">
+      {{ t('home.reset') }}
+    </button>
   </div>
 </template>
