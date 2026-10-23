@@ -66,7 +66,14 @@ function surface(fill: number, t: number, stir: number, phase: number): string {
 let pour: { from: number; to: number; start: number; ms: number; then?: () => void } | null = null
 let frame = 0
 
+/** The surface is redrawn at most 30 times a second: smooth enough, and half the work on phones. */
+const FRAME_MS = 1000 / 30
+let lastDraw = -Infinity
+
 function draw(now: number) {
+  if (!still) frame = requestAnimationFrame(draw)
+  if (now - lastDraw < FRAME_MS) return
+  lastDraw = now
   const t = now / 1000
   let stir = 1
   if (pour) {
@@ -84,7 +91,6 @@ function draw(now: number) {
   }
   backEl.value?.setAttribute('d', surface(Math.min(level.value + 0.02, 1), t, stir, 2.1))
   frontEl.value?.setAttribute('d', surface(level.value, t, stir, 0))
-  if (!still) frame = requestAnimationFrame(draw)
 }
 
 function pourTo(to: number, then?: () => void) {
@@ -104,6 +110,7 @@ function rise(fill: number, key: number) {
   lastShown.key = key
   if (still) {
     level.value = fill
+    lastDraw = -Infinity
     draw(0)
   } else if (levelledUp) {
     pourTo(1, () => {
@@ -132,7 +139,7 @@ const lastShown = { fill: 0, key: -1 }
 <template>
   <button
     ref="buttonEl"
-    class="btn-cta group relative flex h-36 w-full flex-col items-start justify-between p-4 overflow-hidden border-2 border-cta/35 bg-white/45 text-left backdrop-blur-sm"
+    class="btn-cta group relative flex h-36 w-full flex-col items-start justify-between p-4 overflow-hidden border-2 border-cta/35 bg-white/45 text-left"
     @click="$emit('click')"
   >
     <svg
@@ -173,7 +180,9 @@ const lastShown = { fill: 0, key: -1 }
       {{ label }}
       <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
     </span>
+    <!-- An empty glass shows no number: "0%" in a percentages app reads like a failing score. -->
     <span
+      v-if="Math.round(level * 100) > 0"
       class="relative pl-1 font-mono text-lg font-bold tabular-nums"
       :class="level >= 0.15 ? 'text-white' : 'text-cta'"
       aria-hidden="true"
