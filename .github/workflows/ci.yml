@@ -14,6 +14,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Browsers and their system libraries come preinstalled, so no apt step can stall the run.
+    # The tag must match @playwright/test in package-lock.json; a mismatch fails with a clear error.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
     steps:
       - uses: actions/checkout@v4
 
@@ -32,24 +35,6 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
-
-      # The browsers are keyed on the Playwright version, which is what decides which builds it needs.
-      - name: Playwright version
-        id: pw
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - name: Install browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium webkit
-      # A cache hit restores the browsers but not the system libraries they link against.
-      - name: Install browser system deps
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium webkit
 
       - name: Browser tests
         run: npm run test:e2e
