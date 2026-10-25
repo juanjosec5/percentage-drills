@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
 <template>
   <button
     ref="buttonEl"
-    class="btn-cta group relative flex h-36 w-full flex-col items-start justify-between p-4 overflow-hidden border-2 border-cta/35 bg-white/45 text-left"
+    class="btn-cta group relative flex h-28 w-full flex-col items-start justify-between overflow-hidden border-2 border-cta/35 bg-white/45 p-3.5 text-left"
     @click="$emit('click')"
   >
     <svg
@@ -185,30 +185,32 @@ onBeforeUnmount(() => {
       aria-hidden="true"
     />
 
-    <!-- White a little later than the %: the heading is wider, so the liquid must reach further. -->
-    <span
-      v-if="heading"
-      class="relative pl-1 text-sm font-semibold"
-      :class="level >= 0.25 ? 'text-white' : 'text-ink-muted'"
-      >{{ heading }}</span
-    >
+    <!-- Top row: the level's name on the left, how full the glass is on the right. Each turns
+         white once the liquid has reached it. -->
+    <span class="relative flex w-full items-baseline justify-between gap-2 px-1">
+      <span
+        class="text-sm font-semibold"
+        :class="level >= 0.25 ? 'text-white' : 'text-ink-muted'"
+        >{{ heading }}</span
+      >
+      <!-- An empty glass shows no number: "0%" in a percentages app reads like a failing score. -->
+      <span
+        v-if="Math.round(level * 100) > 0"
+        class="font-mono text-base font-bold tabular-nums"
+        :class="level >= 0.9 ? 'text-white' : 'text-cta'"
+        aria-hidden="true"
+      >
+        {{ Math.round(level * 100) }}%<template v-if="level >= 1"> ✓</template>
+      </span>
+    </span>
     <!-- Frosted glass: the liquid shows through, blurred, so the label sits in the tube rather
          than on top of it. Only this small pill is blurred, to keep repaints cheap on phones. -->
     <span
       :class="{ 'animate-pop': celebrating }"
-      class="relative inline-flex items-center gap-2 rounded-xl border border-white/60 bg-white/45 px-4 py-2 text-xl font-bold text-cta shadow-soft backdrop-blur-md sm:text-2xl"
+      class="relative inline-flex items-center gap-2 rounded-2xl border border-white/60 bg-white/45 px-3.5 py-1.5 text-lg font-bold text-cta shadow-soft backdrop-blur-md sm:text-xl"
     >
       {{ celebrating ? celebrateLabel : label }}
       <span class="inline-block transition-transform group-hover:translate-x-1">→</span>
-    </span>
-    <!-- An empty glass shows no number: "0%" in a percentages app reads like a failing score. -->
-    <span
-      v-if="Math.round(level * 100) > 0"
-      class="relative pl-1 font-mono text-lg font-bold tabular-nums"
-      :class="level >= 0.15 ? 'text-white' : 'text-cta'"
-      aria-hidden="true"
-    >
-      {{ Math.round(level * 100) }}%<template v-if="level >= 1"> ✓</template>
     </span>
     <span class="sr-only">{{ progressLabel }}</span>
   </button>
