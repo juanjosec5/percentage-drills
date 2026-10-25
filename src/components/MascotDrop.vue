@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The mascot: a drop of the violet liquid from the Start glass. It only reacts (no speech, no
+// Plip, the mascot: a drop of the violet liquid from the Start glass. It only reacts (no speech, no
 // text), so it's always decorative and hidden from screen readers. Every animation plays a few
 // times and stops: nothing here moves for longer than 5s.
 export type Mood = 'idle' | 'happy' | 'oops' | 'cheer' | 'sleep'

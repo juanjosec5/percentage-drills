@@ -1,3 +1,7 @@
+<script lang="ts">
+const lastSeen = { unlocked: -1 }
+</script>
+
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 
@@ -26,15 +30,13 @@ const toGo = computed(() =>
 const levelFill = computed(() => (progress.allMastered ? 1 : (GOAL - toGo.value) / GOAL))
 const firstRun = computed(() => Object.keys(progress.days).length === 0)
 
-// The level that opened since Home was last shown: its row and the new ★ pop in, timed after the
-// glass has poured full (module scope, so it survives the trip to the drill and back).
-const justOpened = ref<number | null>(null)
-onMounted(() => {
-  // A jump from placement isn't a level-up: no pop.
-  if (lastSeen.unlocked >= 0 && progress.unlocked > lastSeen.unlocked && !progress.justPlaced)
-    setTimeout(() => (justOpened.value = progress.unlocked), OPEN_DELAY_MS)
-  lastSeen.unlocked = progress.unlocked
-})
+// A level finished since Home was last shown: the path plays the level-up moment for it
+// (module scope, so it survives the trip to the drill and back). A jump from placement isn't one.
+const levelUp =
+  lastSeen.unlocked >= 0 && progress.unlocked > lastSeen.unlocked && !progress.justPlaced
+    ? progress.unlocked - 1
+    : null
+lastSeen.unlocked = progress.unlocked
 
 // autofocus only fires on page load, not when coming back from a drill.
 const ctaEl = ref<InstanceType<typeof LiquidCta>>()
@@ -76,12 +78,6 @@ async function importProgress(event: Event) {
 }
 </script>
 
-<script lang="ts">
-const lastSeen = { unlocked: -1 }
-/** About when the glass reaches the top on a level-up. */
-const OPEN_DELAY_MS = 1100
-</script>
-
 <template>
   <div class="mx-auto max-w-xl space-y-5 px-4 py-8">
     <header>
@@ -93,13 +89,17 @@ const OPEN_DELAY_MS = 1100
       <div class="rainbow mt-2 h-1.5 w-28 animate-rainbow rounded-full" />
     </header>
 
-    <LevelPath :just-opened="justOpened" @start="(i) => emit('start', 'endless', i)">
-      <template #current>
+    <LevelPath
+      :level-up="levelUp"
+      @start="(i) => emit('start', 'endless', i)"
+      @settled="ctaEl?.focus()"
+    >
+      <template #current="{ onFull, level }">
         <LiquidCta
           ref="ctaEl"
           :fill="levelFill"
           :level-key="progress.unlocked"
-          :heading="t(LEVELS[progress.unlocked].title)"
+          :heading="t(LEVELS[level].title)"
           :celebrate-label="t('drill.levelDone', { n: progress.unlocked })"
           :quiet="progress.justPlaced"
           :label="
@@ -109,6 +109,7 @@ const OPEN_DELAY_MS = 1100
           "
           :progress-label="progress.allMastered ? '' : t('meter.toGoShort', { n: toGo })"
           @click="emit('start', ctaMode, progress.unlocked)"
+          @full="onFull"
         />
       </template>
     </LevelPath>
