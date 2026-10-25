@@ -19,6 +19,13 @@ test('invalid input is flagged and cannot be submitted', async ({ page }) => {
   await expect(page.locator('#answer-hint')).toHaveText('Numbers only')
   await expect(input(page)).toHaveAttribute('aria-invalid', 'true')
   await expect(page.getByRole('button', { name: 'Check' })).toBeDisabled()
+
+  // A number typed up to its decimal mark is still being typed, with either mark.
+  for (const partial of ['43.', '43,']) {
+    await input(page).fill(partial)
+    await expect(page.locator('#answer-hint')).toHaveText('')
+    await expect(input(page)).toHaveAttribute('aria-invalid', 'false')
+  }
 })
 
 test('the live region announces each verdict', async ({ page }) => {

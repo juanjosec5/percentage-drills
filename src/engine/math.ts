@@ -47,11 +47,23 @@ const THOUSANDS = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/
  * phone's number pad has no point. Answers never need 3 decimals, so "1,503" is never ambiguous.
  * Returns null when it isn't a number.
  */
+const clean = (input: string) =>
+  input.trim().replace(/\s+/g, '').replace(/^\$/, '').replace(/%$/, '')
+
 export function parseAnswer(input: string): number | null {
-  let cleaned = input.trim().replace(/\s+/g, '').replace(/^\$/, '').replace(/%$/, '')
+  let cleaned = clean(input)
   cleaned = THOUSANDS.test(cleaned) ? cleaned.replaceAll(',', '') : cleaned.replace(',', '.')
   if (!/^-?\d*\.?\d+$/.test(cleaned)) return null
   return Number(cleaned)
+}
+
+/**
+ * Still being typed, not wrong: empty, a lone minus, or a number that ends in its decimal mark
+ * ("43." or "43,", either mark on any device). Flagging these made "Numbers only" flash at the
+ * keystroke before every decimal digit.
+ */
+export function isPartialAnswer(input: string): boolean {
+  return /^-?\d*[.,]?$/.test(clean(input))
 }
 
 export function isCorrect(input: string, answer: number): boolean {
