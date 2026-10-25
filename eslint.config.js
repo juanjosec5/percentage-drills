@@ -22,6 +22,13 @@ export default tseslint.config(
       // TypeScript already catches undefined references; no-undef doesn't
       // understand ambient DOM/TS globals and produces false positives.
       'no-undef': 'off',
+      // A component's module-scope <script> (state shared by every mount) goes before
+      // <script setup>: in the other order, no-useless-assignment reads the shared values as
+      // never used. That failed CI twice before this rule.
+      'vue/block-order': [
+        'error',
+        { order: ['script:not([setup])', 'script[setup]', 'template', 'style'] },
+      ],
     },
   },
   eslintConfigPrettier,

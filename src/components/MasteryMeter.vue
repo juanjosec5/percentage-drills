@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // A level's countdown as GOAL pips: one fills with each right, on-time answer and never empties,
 // so the learner can see exactly how many are left. The pips teach the rule; there's no legend.
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
@@ -19,6 +19,9 @@ const level = computed(() => LEVELS[props.levelIndex])
 const answers = computed(() => progress.history[level.value.id] ?? [])
 const done = computed(() => Math.min(progress.statusOf(props.levelIndex).counted, GOAL))
 const toGo = computed(() => answersToMastery(level.value, answers.value))
+/** The pip that just filled: it pops, so a counted answer is felt, not just counted. */
+const popped = ref(0)
+watch(done, (now, before) => (popped.value = now > before ? now : 0))
 </script>
 
 <template>
@@ -31,6 +34,7 @@ const toGo = computed(() => answersToMastery(level.value, answers.value))
         class="flex items-center justify-center rounded-full text-[10px] leading-none font-bold"
         :class="[
           i <= done ? 'bg-correct text-white' : 'border border-dashed border-ink-muted/50',
+          { 'animate-pop': i === popped },
           compact ? 'size-3.5 text-[8px]' : 'size-4',
         ]"
         aria-hidden="true"

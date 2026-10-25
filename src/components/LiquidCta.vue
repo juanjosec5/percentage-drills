@@ -1,3 +1,8 @@
+<script lang="ts">
+// Module scope, shared by every mount: where the liquid stood when Home was last left.
+const lastShown = { fill: 0, key: -1 }
+</script>
+
 <script setup lang="ts">
 // The main Start button as a glass tube that fills with violet liquid as the current level nears
 // mastery. The surface is drawn every frame from out-of-step waves, so it never visibly repeats.
@@ -18,7 +23,7 @@ const props = defineProps<{
   /** Read by screen readers instead of the percentage. */
   progressLabel: string
 }>()
-defineEmits<{ click: [] }>()
+const emit = defineEmits<{ click: []; full: [] }>()
 
 const buttonEl = ref<HTMLButtonElement>()
 defineExpose({ focus: () => buttonEl.value?.focus() })
@@ -110,8 +115,6 @@ function pourTo(to: number, then?: () => void) {
 }
 
 const celebrating = ref(false)
-const HOLD_MS = 900
-let holdTimer: ReturnType<typeof setTimeout> | undefined
 
 function rise(fill: number, key: number) {
   // -1 means nothing shown yet this visit: a first load is not a level-up.
@@ -123,15 +126,11 @@ function rise(fill: number, key: number) {
     lastDraw = -Infinity
     draw(0)
   } else if (levelledUp) {
+    // Pour to the top and stay full: Home then moves on to the next level, whose glass starts
+    // empty and rises to its own fill.
     celebrating.value = true
-    pourTo(1, () => {
-      // Hold it full for a beat, bubbles racing, before the next level starts empty.
-      holdTimer = setTimeout(() => {
-        celebrating.value = false
-        level.value = 0
-        pourTo(fill)
-      }, HOLD_MS)
-    })
+    lastShown.fill = 0
+    pourTo(1, () => emit('full'))
   } else pourTo(fill)
 }
 
@@ -145,13 +144,7 @@ watch(
 )
 onBeforeUnmount(() => {
   cancelAnimationFrame(frame)
-  clearTimeout(holdTimer)
 })
-</script>
-
-<script lang="ts">
-// Module scope, shared by every mount: where the liquid stood when Home was last left.
-const lastShown = { fill: 0, key: -1 }
 </script>
 
 <template>
