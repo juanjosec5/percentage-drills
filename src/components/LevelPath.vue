@@ -1,3 +1,9 @@
+<script lang="ts">
+// Module scope, shared by every mount: whether the locks have wobbled yet this visit.
+const seen = { locks: false }
+const PEEK_MS = 2000
+</script>
+
 <script setup lang="ts">
 // The levels as a path: one straight rail down the left, a node per level, grouped by world.
 // The current level's row holds the glass button (the #current slot), so where you are and what
@@ -59,11 +65,6 @@ const wobble = !seen.locks
 seen.locks = true
 
 const mascotMood = computed(() => (progress.dailyDone ? 'sleep' : 'idle'))
-</script>
-
-<script lang="ts">
-const seen = { locks: false }
-const PEEK_MS = 2000
 </script>
 
 <template>
