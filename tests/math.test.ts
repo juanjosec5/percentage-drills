@@ -25,11 +25,10 @@ describe('percent math', () => {
     expect(fmt(1.25, 1)).toBe('1.3')
   })
 
-  it('marks thousands with commas, decimals with a point', () => {
-    expect(fmt(999)).toBe('999')
-    expect(fmt(1000)).toBe('1,000')
-    expect(fmt(12345.5)).toBe('12,345.5')
-    expect(fmt(1234567.89)).toBe('1,234,567.89')
+  // The owner's call: shown numbers match typed ones, so no thousands separator of any kind.
+  it('never marks thousands, and uses a decimal point', () => {
+    expect(fmt(1000)).toBe('1000')
+    expect(fmt(12345.5)).toBe('12345.5')
   })
 
   it('reads its own output back', () => {

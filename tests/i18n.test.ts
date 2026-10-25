@@ -31,7 +31,7 @@ describe('dictionaries', () => {
 describe('translate', () => {
   it('writes numbers the same in both languages, and "15%" with no space', () => {
     expect(translate('en', msg('prompt.of', { pct: 15, base: 640 }))).toBe('15% of 640')
-    expect(translate('es', msg('prompt.of', { pct: 10, base: 15034 }))).toBe('10% de 15,034')
+    expect(translate('es', msg('prompt.of', { pct: 10, base: 15034 }))).toBe('10% de 15034')
     expect(translate('es', msg('prompt.of', { pct: 15, base: 640 }))).toBe('15% de 640')
     expect(translate('es', msg('drill.wrong', { answer: 63.5 }))).toBe('Uy, no: es 63.5')
     expect(translate('es', msg('seconds', { s: 1.23 }))).toBe('1.2 s')

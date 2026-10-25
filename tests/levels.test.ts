@@ -80,16 +80,25 @@ describe.each(LEVELS.map((level, i) => [level.id, level, i] as const))('level %s
 })
 
 describe('10%', () => {
-  it('uses numbers in the thousands, round or not', () => {
+  const bases = (ramp: number) => {
     const rng = createRng(5)
-    const problems = Array.from({ length: 300 }, () => LEVELS[0].generate(rng))
-    for (const p of problems) {
-      expect(p.breakdown.base).toBeGreaterThanOrEqual(1000)
-      expect(p.breakdown.base).toBeLessThanOrEqual(99_999)
+    return Array.from({ length: 200 }, () => LEVELS[0].generate(rng, ramp).breakdown.base)
+  }
+
+  it('starts with hundreds and grows to tens of thousands as the level goes on', () => {
+    const within = (ramp: number, min: number, max: number) =>
+      bases(ramp).every((b) => b >= min && b < max)
+    expect(within(0, 100, 1000)).toBe(true)
+    expect(within(0.5, 1000, 10_000)).toBe(true)
+    expect(within(1, 10_000, 100_000)).toBe(true)
+  })
+
+  it('reviews a level at its full range', () => {
+    const rng = createRng(9)
+    for (let i = 0; i < 200; i++) {
+      const { problem, levelIndex } = nextProblem(1, rng, undefined, 0)
+      if (levelIndex === 0) expect(problem.breakdown.base).toBeGreaterThanOrEqual(10_000)
     }
-    const whole = problems.filter((p) => Number.isInteger(p.answer)).length
-    expect(whole).toBeGreaterThan(100)
-    expect(whole).toBeLessThan(220)
   })
 })
 

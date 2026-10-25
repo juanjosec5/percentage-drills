@@ -46,8 +46,10 @@ const levelsIn = (w: number) =>
   Array.from({ length: WORLDS[w].to - WORLDS[w].from + 1 }, (_, k) => WORLDS[w].from + k)
 const doneIn = (w: number) => levelsIn(w).filter(isMastered).length
 
-/** One fixed problem per level, so a locked row always shows the same taste of what's coming. */
-const samples = computed(() => LEVELS.map((level, i) => t(level.generate(createRng(i + 1)).prompt)))
+/** One fixed opening problem per level, so a locked row always shows the same taste of what's coming. */
+const samples = computed(() =>
+  LEVELS.map((level, i) => t(level.generate(createRng(i + 1), 0).prompt)),
+)
 /** The locked row being previewed after a tap. */
 const peeking = ref<number | null>(null)
 let peekTimer: ReturnType<typeof setTimeout> | undefined
