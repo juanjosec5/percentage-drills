@@ -79,6 +79,7 @@ function next() {
   if (outcome === null) return ask()
   if (outcome === 'pass' && check.value < CHECKS.length - 1) {
     phase.value = 'cleared'
+    buzz(BUZZ.cleared)
     after(CLEARED_MS, () => {
       check.value++
       results.value.push([])
