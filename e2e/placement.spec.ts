@@ -16,19 +16,19 @@ async function answer(page: Page, right: boolean) {
 test('stays on offer after practising', async ({ page }) => {
   await open(page, {
     unlocked: 0,
-    history: { 'ten-round': [{ correct: true, ms: 900 }] },
+    history: { 'ten-any': [{ correct: true, ms: 900 }] },
     days: {},
   })
   await expect(skip(page)).toBeVisible()
 })
 
 test('is gone once it could no longer move the learner up', async ({ page }) => {
-  await open(page, { unlocked: 6, history: {}, days: {} })
+  await open(page, { unlocked: 5, history: {}, days: {} })
   await expect(cta(page)).toBeVisible()
   await expect(skip(page)).toHaveCount(0)
 })
 
-test('three right answers then a miss start the learner at level 5, with ☆ on the skipped levels', async ({
+test('three right answers then a miss start the learner at level 4, with ☆ on the skipped levels', async ({
   page,
 }) => {
   await open(page)
@@ -42,17 +42,17 @@ test('three right answers then a miss start the learner at level 5, with ☆ on 
   await expect(page.getByText(/Correct|Not quite/)).toHaveCount(0)
   await answer(page, false)
 
-  await expect(cta(page)).toContainText('Start level 5')
+  await expect(cta(page)).toContainText('Start level 4')
   await expect(cta(page)).not.toContainText('complete')
   const levels = page.getByRole('list', { name: 'Levels' })
-  await expect(levels.getByRole('img', { name: 'Skipped' })).toHaveCount(4)
+  await expect(levels.getByRole('img', { name: 'Skipped' })).toHaveCount(3)
   await expect(levels.getByRole('img', { name: 'Mastered' })).toHaveCount(0)
-  // Placed at level 5, it could still open up to level 7, so it stays.
+  // Placed at level 4, it could still open up to level 6, so it stays.
   await expect(skip(page)).toBeVisible()
 
   const saved = await stored(page)
-  expect(saved.unlocked).toBe(4)
-  expect(saved.placedUpTo).toBe(4)
+  expect(saved.unlocked).toBe(3)
+  expect(saved.placedUpTo).toBe(3)
   expect(saved.history).toEqual({})
   expect(Object.keys(saved.days)).toHaveLength(0)
 })

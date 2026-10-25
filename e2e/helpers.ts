@@ -3,6 +3,8 @@ import { expect, type Page } from '@playwright/test'
 
 export const KEY = 'percent-drills:v1'
 export const LANG_KEY = 'percent-drills:lang'
+/** Stamped on every seed, so seeds use today's level indexes instead of being migrated. */
+export const SAVE_VERSION = 4
 
 /**
  * Noon on Friday 2026-10-23 in Bogotá (the configured timezone). The drill seeds its problems
@@ -35,7 +37,8 @@ export interface Seed {
 export async function open(page: Page, saved?: Seed | string) {
   await page.clock.setFixedTime(NOW)
   if (saved !== undefined) {
-    const raw = typeof saved === 'string' ? saved : JSON.stringify(saved)
+    const raw =
+      typeof saved === 'string' ? saved : JSON.stringify({ version: SAVE_VERSION, ...saved })
     await page.addInitScript(
       ([key, value]) => {
         if (sessionStorage.getItem('e2e-seeded')) return
@@ -58,8 +61,10 @@ export const live = (page: Page) => page.locator('[aria-live]')
 export const nextButton = (page: Page) => page.getByRole('button', { name: /^(Next|Siguiente)$/ })
 
 /** Works out the answer to an English or Spanish prompt from its text alone. */
-export function solve(prompt: string): number {
-  const n = (s: string) => Number(s.replace(',', '.'))
+export function solve(text: string): number {
+  // Commas only ever mark thousands (15,034); decimals use a point in both languages.
+  const prompt = text.replaceAll(',', '')
+  const n = Number
   const r2 = (x: number) => Math.round(x * 100) / 100
   let m
   if ((m = prompt.match(/^([\d.,]+)% (?:of|de) ([\d.,]+)$/))) return r2((n(m[1]) * n(m[2])) / 100)
@@ -73,6 +78,7 @@ export function solve(prompt: string): number {
 /** Types an answer to the problem on screen and submits it; `right: false` types a wrong one. */
 export async function answer(page: Page, right = true, lang: 'en' | 'es' = 'en') {
   const value = solve(await promptEl(page).innerText()) + (right ? 0 : 1)
+  // In Spanish, type a decimal comma, as a Spanish phone's number pad does.
   await input(page).fill(lang === 'es' ? String(value).replace('.', ',') : String(value))
   await input(page).press('Enter')
   await expect(nextButton(page)).toBeFocused()

@@ -18,37 +18,37 @@ export function applyChange(base: number, pct: number): number {
   return round2(base * (1 + pct / 100))
 }
 
-const formatters = new Map<string, Intl.NumberFormat>()
+const formatters = new Map<number | undefined, Intl.NumberFormat>()
 
 /**
- * Display a number the way people say it: no trailing zeros (unless `digits` fixes them) and the
- * locale's decimal mark (10.5, 10,5). No thousands separator: parseAnswer would read 1,000 as 1.
+ * Display a number the way people say it: no trailing zeros (unless `digits` fixes them), a
+ * decimal point and comma thousands (15,034 · 1,503.4). The same in every language, by the
+ * owner's choice: one notation, as on Colombian price tags.
  */
-export function fmt(n: number, lang = 'en', digits?: number): string {
-  const id = `${lang}:${digits}`
-  let f = formatters.get(id)
+export function fmt(n: number, digits?: number): string {
+  let f = formatters.get(digits)
   if (!f) {
-    f = new Intl.NumberFormat(lang, {
-      useGrouping: false,
+    f = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: digits ?? 0,
       maximumFractionDigits: digits ?? 2,
     })
-    formatters.set(id, f)
+    formatters.set(digits, f)
   }
   return f.format(digits === undefined ? round2(n) : n)
 }
 
+/** Comma thousands, as fmt writes them: 15,034 or 1,503.4. */
+const THOUSANDS = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/
+
 /**
- * Parses what the learner typed. Accepts a decimal comma (10,5) as well as a point,
- * and ignores spaces, a trailing % and a leading $. Returns null when it isn't a number.
+ * Parses what the learner typed. Ignores spaces, a trailing % and a leading $. Commas in groups
+ * of three are thousands (15,034); any other comma is a decimal mark (10,5), since a Spanish
+ * phone's number pad has no point. Answers never need 3 decimals, so "1,503" is never ambiguous.
+ * Returns null when it isn't a number.
  */
 export function parseAnswer(input: string): number | null {
-  const cleaned = input
-    .trim()
-    .replace(/\s+/g, '')
-    .replace(/^\$/, '')
-    .replace(/%$/, '')
-    .replace(',', '.')
+  let cleaned = input.trim().replace(/\s+/g, '').replace(/^\$/, '').replace(/%$/, '')
+  cleaned = THOUSANDS.test(cleaned) ? cleaned.replaceAll(',', '') : cleaned.replace(',', '.')
   if (!/^-?\d*\.?\d+$/.test(cleaned)) return null
   return Number(cleaned)
 }

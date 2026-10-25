@@ -6,7 +6,7 @@ import type { Answer } from '@/engine/mastery'
 
 /** Still `v1`: renaming the key would strand every existing save. The format version is inside. */
 export const KEY = 'percent-drills:v1'
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 /**
  * Answers kept per level. Mastery counts on-time right answers in here, so the cap sits far above
  * GOAL: even a learner who misses most of them reaches GOAL long before old ones drop off.
@@ -54,6 +54,14 @@ export const migrations: ((save: Raw) => Raw)[] = [
   (save) => save,
   // 2 → 3: adds placedUpTo; normalize() fills in 0, since no earlier save was placed.
   (save) => save,
+  // 3 → 4: "10% · round numbers" (index 0) merged into "10% · any number", which keeps its id
+  // and history. Every level after it moves down one.
+  (save) => {
+    const down = (v: unknown) => (Number.isInteger(v) ? Math.max((v as number) - 1, 0) : v)
+    const history = isObject(save.history) ? { ...save.history } : save.history
+    if (isObject(history)) delete history['ten-round']
+    return { ...save, unlocked: down(save.unlocked), placedUpTo: down(save.placedUpTo), history }
+  },
 ]
 
 /** Saves without a version predate versioning: v1. */

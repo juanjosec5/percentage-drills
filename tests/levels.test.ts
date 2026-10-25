@@ -7,13 +7,14 @@ const en = (m: Msg) => translate('en', m)
 const es = (m: Msg) => translate('es', m)
 
 // Like solve() below, for Spanish prompts, so a translation can't change the maths.
-function solveEs(prompt: string): number {
-  const num = (s: string) => Number(s.replace(',', '.'))
-  let m = prompt.match(/^([\d,]+)% de ([\d,]+)$/)
+function solveEs(text: string): number {
+  const prompt = text.replaceAll(',', '')
+  const num = Number
+  let m = prompt.match(/^([\d.]+)% de ([\d.]+)$/)
   if (m) return percentOf(num(m[1]), num(m[2]))
-  m = prompt.match(/^¿([\d,]+) es qué % de ([\d,]+)\?$/)
+  m = prompt.match(/^¿([\d.]+) es qué % de ([\d.]+)\?$/)
   if (m) return round2((num(m[1]) / num(m[2])) * 100)
-  m = prompt.match(/^([\d,]+) ([+−]) ([\d,]+)%$/)
+  m = prompt.match(/^([\d.]+) ([+−]) ([\d.]+)%$/)
   if (m) return applyChange(num(m[1]), (m[2] === '+' ? 1 : -1) * num(m[3]))
   throw new Error(`unrecognised prompt: ${prompt}`)
 }
@@ -27,7 +28,8 @@ const texts = (p: Problem): Msg[] => [
 ]
 
 // Re-derives the answer from the prompt text alone, independently of the generators.
-function solve(prompt: string): number {
+function solve(text: string): number {
+  const prompt = text.replaceAll(',', '')
   let m = prompt.match(/^([\d.]+)% of ([\d.]+)$/)
   if (m) return percentOf(Number(m[1]), Number(m[2]))
   m = prompt.match(/^([\d.]+) is what % of ([\d.]+)\?$/)
@@ -71,9 +73,23 @@ describe.each(LEVELS.map((level, i) => [level.id, level, i] as const))('level %s
         expect(s.from, label).toBeGreaterThanOrEqual(0)
         expect(s.to, label).toBeGreaterThan(s.from)
       }
-      expect(en(b.result), label).toMatch(/[\d.]+%?$/)
-      expect(es(b.result), label).toMatch(/[\d,]+(\s%)?$/)
+      expect(en(b.result), label).toMatch(/[\d.,]+%?$/)
+      expect(es(b.result), label).toMatch(/[\d.,]+%?$/)
     }
+  })
+})
+
+describe('10%', () => {
+  it('uses numbers in the thousands, round or not', () => {
+    const rng = createRng(5)
+    const problems = Array.from({ length: 300 }, () => LEVELS[0].generate(rng))
+    for (const p of problems) {
+      expect(p.breakdown.base).toBeGreaterThanOrEqual(1000)
+      expect(p.breakdown.base).toBeLessThanOrEqual(99_999)
+    }
+    const whole = problems.filter((p) => Number.isInteger(p.answer)).length
+    expect(whole).toBeGreaterThan(100)
+    expect(whole).toBeLessThan(220)
   })
 })
 
