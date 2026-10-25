@@ -10,13 +10,12 @@ export const es: Dictionary = {
   'lang.label': 'Idioma',
   seconds: '{s:1} s',
   'streak.aria': plural('Racha de {n} día', 'Racha de {n} días'),
+  'streak.today': '{n} de {goal} hoy',
   'error.title': 'Algo salió mal',
   'error.reset': 'Reiniciar',
 
   'home.start': 'Empezar nivel {n}',
   'home.continue': 'Continuar el nivel {n}',
-  'home.endless': 'Práctica libre',
-  'home.endlessLink': 'Práctica libre →',
   'home.levels': 'Niveles',
   'home.placed': 'Saltado',
   'home.findLevel': 'Buscar mi nivel →',
@@ -35,6 +34,7 @@ export const es: Dictionary = {
   'home.importConfirm': '¿Reemplazar tu progreso con este archivo?',
   'home.importInvalid': 'No es un archivo de Percent Drills',
 
+  'drill.dayDone': 'Día cumplido',
   'drill.levelDone': '★ ¡Nivel {n} completado!',
   'drill.reviewTag': '↺ repaso',
   'meter.toGoShort': '{n} más',
@@ -42,7 +42,6 @@ export const es: Dictionary = {
 
   'drill.back': 'Volver',
   'drill.average': 'promedio {time}',
-  'drill.progressDaily': 'Reto diario',
   'drill.level': 'Nivel {n}',
   'drill.timer': 'Cronómetro',
   'drill.answer': 'Respuesta',
@@ -53,8 +52,6 @@ export const es: Dictionary = {
   'drill.youAnswered': 'Respondiste {input}',
   'drill.voided': 'Saliste · problema nuevo',
   'drill.next': 'Siguiente',
-  'drill.dailyDone': '¡Reto diario listo!',
-  'drill.session': '{right}/{total} bien',
   'drill.home': 'Inicio',
 
   'prompt.of': '{pct}% de {base}',

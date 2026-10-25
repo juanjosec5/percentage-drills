@@ -10,7 +10,7 @@ const DONE = '★ Level 3 complete!'
 /** One answer short of finishing level 3, then right answers until it's done. */
 async function finishLevel(page: Page) {
   await open(page, { unlocked: 2, history: { one: answers(9) }, days: {} })
-  await page.getByRole('button', { name: 'Endless practice →' }).click()
+  await cta(page).click()
   // Review problems don't count, so it can take a few.
   for (let i = 0; i < 10; i++) {
     await answer(page)

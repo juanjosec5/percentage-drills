@@ -7,13 +7,12 @@ export const en = {
   'lang.label': 'Language',
   seconds: '{s:1}s',
   'streak.aria': '{n}-day streak',
+  'streak.today': '{n} of {goal} today',
   'error.title': 'Something went wrong',
   'error.reset': 'Reset',
 
   'home.start': 'Start level {n}',
   'home.continue': 'Continue level {n}',
-  'home.endless': 'Endless practice',
-  'home.endlessLink': 'Endless practice →',
   'home.levels': 'Levels',
   'home.mastered': 'Mastered',
   'home.placed': 'Skipped',
@@ -32,6 +31,7 @@ export const en = {
   'home.importConfirm': 'Replace your progress with this file?',
   'home.importInvalid': 'Not a Percent Drills file',
 
+  'drill.dayDone': 'Day done',
   'drill.levelDone': '★ Level {n} complete!',
   'drill.reviewTag': '↺ review',
   'meter.toGoShort': '{n} more',
@@ -39,7 +39,6 @@ export const en = {
 
   'drill.back': 'Back',
   'drill.average': 'avg {time}',
-  'drill.progressDaily': 'Daily set',
   'drill.level': 'Level {n}',
   'drill.timer': 'Timer',
   'drill.answer': 'Answer',
@@ -50,8 +49,6 @@ export const en = {
   'drill.youAnswered': 'You answered {input}',
   'drill.voided': 'You left · new problem',
   'drill.next': 'Next',
-  'drill.dailyDone': 'Daily set done',
-  'drill.session': '{right}/{total} right',
   'drill.home': 'Home',
 
   'prompt.of': '{pct}% of {base}',

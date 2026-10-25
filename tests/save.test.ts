@@ -11,7 +11,7 @@ import {
 } from '@/stores/save'
 
 const R = { correct: true, ms: 900 }
-const DAY = { answered: 10, correct: 9, totalMs: 20_000, bestMs: 900, daily: 10 }
+const DAY = { answered: 10, correct: 9, totalMs: 20_000, bestMs: 900 }
 /** A save as v1 wrote it: no version field. */
 const V1 = {
   unlocked: 3,
@@ -114,7 +114,7 @@ describe('normalize: corrupt entries', () => {
     }
     expect(normalize({ days }).days).toEqual({
       '2026-10-20': DAY,
-      '2026-10-21': { answered: 12, correct: 0, totalMs: 0, bestMs: null, daily: 0 },
+      '2026-10-21': { answered: 12, correct: 0, totalMs: 0, bestMs: null },
     })
   })
 

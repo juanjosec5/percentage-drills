@@ -1,14 +1,13 @@
 <script setup lang="ts">
 // One problem at a time, timed. After a right answer, just the verdict; after a wrong one, the
-// correct answer and a visual breakdown. Daily mode stops after the day's set; endless mode keeps
-// going until you stop.
+// correct answer and a visual breakdown. It keeps going until the level is mastered or you leave:
+// the day's goal (DAY_GOAL answers, for the streak) is a brief toast, never a stop.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
 import MascotDrop from './MascotDrop.vue'
 import MasteryMeter from './MasteryMeter.vue'
-import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
@@ -16,12 +15,12 @@ import { isCorrect, parseAnswer } from '@/engine/math'
 import { counts, GOAL, type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
 import type { Msg } from '@/i18n'
-import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
+import { DAY_GOAL, useProgress } from '@/stores/progress'
 
-const props = defineProps<{ mode: Mode; startLevel: number }>()
+const props = defineProps<{ startLevel: number }>()
 const emit = defineEmits<{ exit: []; place: [] }>()
 
-type Phase = 'asking' | 'feedback' | 'done'
+type Phase = 'asking' | 'feedback'
 
 const progress = useProgress()
 const rng = createRng()
@@ -49,7 +48,6 @@ let leftMidProblem = false
 
 const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
-const homeEl = ref<HTMLButtonElement>()
 
 const canSubmit = computed(() => parseAnswer(input.value) !== null)
 const invalid = computed(() => input.value.trim() !== '' && !canSubmit.value)
@@ -63,18 +61,17 @@ const sessionCorrect = computed(() => session.value.filter((a) => a.correct).len
 const sessionAverage = computed(() =>
   session.value.length ? session.value.reduce((sum, a) => sum + a.ms, 0) / session.value.length : 0,
 )
-const dailyAnswered = computed(() => Math.min(progress.today.daily, DAILY_COUNT))
-/** Daily mode with today's set complete: the drill ends after this answer. */
-const dailySetDone = computed(() => props.mode === 'daily' && progress.dailyDone)
+/** This answer reached the day's goal: a brief toast, and practice goes on. */
+const dayDone = ref(false)
 const verdict = computed(() =>
   wasCorrect.value ? t('drill.correct') : t('drill.wrong', { answer: problem.value?.answer ?? 0 }),
 )
 /** Read out by screen readers: focus moves to Next, so the verdict itself is never focused. */
 const announcement = computed(() => {
-  if (phase.value === 'done') return t('drill.dailyDone')
   if (finished.value !== null)
     return `${verdict.value}. ${t('drill.levelDone', { n: finished.value + 1 })}`
-  return phase.value === 'feedback' ? verdict.value : ''
+  if (phase.value !== 'feedback') return ''
+  return dayDone.value ? `${verdict.value}. ${t('drill.dayDone')}` : verdict.value
 })
 
 function ask() {
@@ -103,7 +100,10 @@ function submit() {
   session.value.push({ correct: wasCorrect.value, ms })
   phase.value = 'feedback'
   offerPlacement.value = tooEasy({ correct: wasCorrect.value, ms })
-  if (progress.record(problemLevel.value, { correct: wasCorrect.value, ms }, props.mode)) {
+  const before = progress.today.answered
+  const levelledUp = progress.record(problemLevel.value, { correct: wasCorrect.value, ms })
+  dayDone.value = before < DAY_GOAL && progress.today.answered >= DAY_GOAL
+  if (levelledUp) {
     finished.value = problemLevel.value
     level.value = progress.unlocked
     // Back to Home, where the glass pours full and the next level opens: hard to miss, unlike a
@@ -128,13 +128,6 @@ function tooEasy(answer: Answer): boolean {
 
 const LEVEL_UP_MS = 1600
 let homeTimer: ReturnType<typeof setTimeout> | undefined
-
-function next() {
-  if (dailySetDone.value) {
-    phase.value = 'done'
-    nextTick(() => homeEl.value?.focus())
-  } else ask()
-}
 
 // An interruption shouldn't record a 90-second answer, so a problem left mid-answer doesn't
 // count: the same outcome as pressing Back, so it opens no new way to skip a hard one.
@@ -192,37 +185,25 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="flex items-center gap-3">
-        <!-- Only the daily set has an end to fill toward. Endless practice gets no bar: one that
-             refilled every 10 answers read as a goal that was never reached. -->
-        <div
-          v-if="mode === 'daily'"
-          class="h-1.5 flex-1 overflow-hidden rounded-full bg-line/70 shadow-press"
-          role="progressbar"
-          :aria-label="t('drill.progressDaily')"
-          aria-valuemin="0"
-          :aria-valuemax="DAILY_COUNT"
-          :aria-valuenow="dailyAnswered"
+      <div class="flex min-h-7 items-center gap-3">
+        <!-- A tally, not a fraction or a bar: practice has no fixed end. The level's pips below
+             are the progress that matters. -->
+        <p v-if="session.length" class="text-sm whitespace-nowrap text-ink-muted tabular-nums">
+          ✓ {{ sessionCorrect }} · {{ t('drill.average', { time: seconds(sessionAverage) }) }}
+        </p>
+        <p
+          v-if="dayDone && phase === 'feedback'"
+          class="ml-auto animate-pop rounded-full bg-star/25 px-2.5 py-0.5 text-sm font-semibold"
+          aria-hidden="true"
         >
-          <div
-            class="rainbow h-full animate-rainbow rounded-full transition-[width] duration-500 ease-out"
-            :style="{ width: `${(dailyAnswered / DAILY_COUNT) * 100}%` }"
-          />
-        </div>
-        <p class="shrink-0 text-sm whitespace-nowrap text-ink-muted tabular-nums">
-          <template v-if="mode === 'daily'">{{ dailyAnswered }}/{{ DAILY_COUNT }}</template>
-          <!-- A tally, not a fraction: "12/12" read like a target that kept moving. -->
-          <template v-else-if="session.length">✓ {{ sessionCorrect }}</template>
-          <template v-if="session.length">
-            · {{ t('drill.average', { time: seconds(sessionAverage) }) }}</template
-          >
+          🔥 {{ t('drill.dayDone') }}
         </p>
       </div>
     </header>
 
     <p class="sr-only" aria-live="polite">{{ announcement }}</p>
 
-    <div v-if="phase !== 'done'" class="flex items-center gap-3">
+    <div class="flex items-center gap-3">
       <p class="text-xs font-medium whitespace-nowrap text-ink-muted">
         {{ t('drill.level', { n: level + 1 }) }}
       </p>
@@ -245,7 +226,7 @@ onBeforeUnmount(() => {
     <p v-if="voided" class="text-sm text-ink-muted" role="status">{{ t('drill.voided') }}</p>
 
     <section
-      v-if="phase !== 'done' && problem"
+      v-if="problem"
       class="card space-y-5 text-center"
       :class="{ 'animate-glow': phase === 'feedback' && wasCorrect }"
     >
@@ -312,24 +293,12 @@ onBeforeUnmount(() => {
         <button
           ref="nextEl"
           class="btn btn-primary w-full"
-          @click="finished === null ? next() : emit('exit')"
+          @click="finished === null ? ask() : emit('exit')"
         >
           {{ t('drill.next') }}
           <span class="ml-1" aria-hidden="true">⏎</span>
         </button>
       </template>
-    </section>
-
-    <section v-else-if="phase === 'done'" class="card animate-pop space-y-3 text-center">
-      <p class="text-2xl font-semibold">{{ t('drill.dailyDone') }}</p>
-      <div class="rainbow mx-auto h-1.5 w-24 animate-rainbow rounded-full" />
-      <p class="text-ink-muted">
-        {{ t('drill.session', { right: sessionCorrect, total: session.length }) }}
-      </p>
-      <StreakChip v-if="progress.streak" :days="progress.streak" />
-      <button ref="homeEl" class="btn btn-primary w-full" @click="emit('exit')">
-        {{ t('drill.home') }}
-      </button>
     </section>
   </div>
 </template>
