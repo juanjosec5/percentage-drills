@@ -15,7 +15,7 @@ test('the timer switch hides the running clock, and the choice is saved', async 
   await open(page)
   await cta(page).click()
   await expect(timer(page)).toHaveAttribute('aria-checked', 'true')
-  await expect(time(page)).toHaveText(/^\d+\.\ds$/)
+  await expect(time(page)).toHaveText(/^\d+\.\ds \/ \d+s$/)
 
   await timer(page).click()
   await expect(timer(page)).toHaveAttribute('aria-checked', 'false')
@@ -24,7 +24,7 @@ test('the timer switch hides the running clock, and the choice is saved', async 
 
   // The time still shows once answered.
   await answer(page, false)
-  await expect(time(page)).toHaveText(/^\d+\.\ds$/)
+  await expect(time(page)).toHaveText(/^\d+\.\ds \/ \d+s$/)
 
   await page.reload()
   await cta(page).click()

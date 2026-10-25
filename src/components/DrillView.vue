@@ -57,7 +57,10 @@ const invalid = computed(() => !canSubmit.value && !isPartialAnswer(input.value)
 const showTime = computed(() => progress.settings.showTimer || phase.value !== 'asking')
 const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))
 
-const sessionCorrect = computed(() => session.value.filter((a) => a.correct).length)
+/** The time allowed for this problem to count: its own level's limit. */
+const limitMs = computed(() => LEVELS[problemLevel.value].targetSeconds * 1000)
+/** Right but over the limit: correct, yet it fills no pip, so it isn't celebrated like one. */
+const slow = ref(false)
 // A plain average for the session header: it is labelled "avg". Mastery doesn't use it: a level
 // counts right answers within its target time, one by one.
 const sessionAverage = computed(() =>
@@ -99,21 +102,24 @@ function submit() {
   const ms = clock.stop()
   voided.value = false
   wasCorrect.value = isCorrect(input.value, problem.value.answer)
+  slow.value = wasCorrect.value && ms > limitMs.value
   session.value.push({ correct: wasCorrect.value, ms })
   phase.value = 'feedback'
   offerPlacement.value = tooEasy({ correct: wasCorrect.value, ms })
   const before = progress.today.answered
   const levelledUp = progress.record(problemLevel.value, { correct: wasCorrect.value, ms })
   dayDone.value = before < DAY_GOAL && progress.today.answered >= DAY_GOAL
+  // Only an answer that filled a pip buzzes; the level-up's big buzz plays on Home, with its burst.
+  const filledPip = wasCorrect.value && !slow.value && !reviewing.value
+  if (filledPip) haptics.buzz(dayDone.value ? BUZZ.day : BUZZ.right)
   if (levelledUp) {
-    haptics.buzz(BUZZ.levelUp)
     // The level stays on screen with all its ✓ until Home takes over: switching to the next
     // level here showed its empty pips for a moment.
     finished.value = problemLevel.value
     // Back to Home, where the glass pours full and the next level opens: hard to miss, unlike a
     // popup. Enter (Next has focus) goes straight away.
     homeTimer = setTimeout(() => emit('exit'), LEVEL_UP_MS)
-  } else if (wasCorrect.value) haptics.buzz(BUZZ.right)
+  }
   nextTick(() => nextEl.value?.focus())
 }
 
@@ -209,10 +215,10 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="flex min-h-7 items-center gap-3">
-        <!-- A tally, not a fraction or a bar: practice has no fixed end. The level's pips below
-             are the progress that matters. -->
+        <!-- No tally of right answers: it disagreed with the pips, which count only answers that
+             are right, in time and at this level. The pips are the one count on screen. -->
         <p v-if="session.length" class="text-sm whitespace-nowrap text-ink-muted tabular-nums">
-          ✓ {{ sessionCorrect }} · {{ t('drill.average', { time: seconds(sessionAverage) }) }}
+          {{ t('drill.average', { time: seconds(sessionAverage) }) }}
         </p>
         <p
           v-if="dayDone && phase === 'feedback'"
@@ -251,13 +257,17 @@ onBeforeUnmount(() => {
     <section
       v-if="problem"
       class="card space-y-5 text-center"
-      :class="{ 'animate-glow': phase === 'feedback' && wasCorrect }"
+      :class="{ 'animate-glow': phase === 'feedback' && wasCorrect && !slow }"
     >
       <p v-if="tip" class="font-mono text-sm text-ink-muted">{{ t(tip) }}</p>
       <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
       <!-- Stays grey after answering: the verdict line alone carries right/wrong. -->
       <p v-if="showTime" class="font-mono text-lg text-ink-muted tabular-nums">
         {{ t(seconds(clock.ms.value)) }}
+        <!-- The limit for this answer to count; it turns red once passed. -->
+        <span :class="{ 'text-wrong': clock.ms.value > limitMs }">{{
+          t('drill.limit', { s: limitMs / 1000 })
+        }}</span>
       </p>
 
       <form v-if="phase === 'asking'" class="space-y-2" @submit.prevent="submit">
@@ -284,13 +294,23 @@ onBeforeUnmount(() => {
       </form>
 
       <template v-else>
-        <div class="animate-pop space-y-1">
+        <!-- As tall as the answer box it replaces, with the verdict in its middle: it doesn't jump
+             up against the time, and only moves when the breakdown's numbers appear below. -->
+        <div class="flex min-h-22 animate-pop flex-col items-center justify-center gap-1">
           <div class="flex items-center justify-center gap-2">
-            <MascotDrop :key="serial" :mood="wasCorrect ? 'happy' : 'oops'" :size="30" />
+            <MascotDrop
+              :key="serial"
+              class="-translate-y-0.5"
+              :mood="!wasCorrect ? 'oops' : slow ? 'idle' : 'happy'"
+              :size="30"
+            />
             <p class="text-xl font-semibold" :class="verdictClass">
               <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
             </p>
           </div>
+          <p v-if="slow" class="text-sm text-ink-muted">
+            {{ t('drill.slow', { s: limitMs / 1000 }) }}
+          </p>
           <p v-if="finished !== null" class="animate-pop text-2xl font-bold text-cta">
             {{ t('drill.levelDone', { n: finished + 1 }) }}
           </p>

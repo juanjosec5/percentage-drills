@@ -47,7 +47,7 @@ test.describe('Spanish browser', () => {
     expect(right).toMatch(/^\d+\.\d+$/)
     await answer(page, false, 'es')
     await expect(page.locator('section.card p.text-xl')).toHaveText(`✗ Uy, no: es ${right}`)
-    await expect(page.locator('section.card p.tabular-nums')).toHaveText(/^\d+\.\d s$/)
+    await expect(page.locator('section.card p.tabular-nums')).toHaveText(/^\d+\.\d s \/ \d+ s$/)
     // 15% is 10% + 5%.
     await expect(page.locator('ol.font-mono')).toContainText('½ del 10%')
     expect(englishIn(await page.locator('body').innerText())).toEqual([])
