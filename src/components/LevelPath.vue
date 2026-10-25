@@ -20,6 +20,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BurstRing from './BurstRing.vue'
 import MascotDrop from './MascotDrop.vue'
+import PlipAlive from './PlipAlive.vue'
 import { BUZZ, useHaptics } from '@/composables/useHaptics'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
@@ -231,7 +232,7 @@ onBeforeUnmount(() => {
         >
           <template v-if="isCurrent(i)">
             <span class="node node-current" aria-hidden="true">
-              <MascotDrop v-if="flyerTop === null" mood="idle" :size="40" />
+              <PlipAlive v-if="flyerTop === null" :size="40" />
             </span>
             <!-- Laid out but hidden during the hop, so the drop lands where the glass will be. It
                  fades in rather than scaling: a scale moved it under the drop that just landed. -->
