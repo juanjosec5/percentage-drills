@@ -11,8 +11,6 @@ import { useProgress } from '@/stores/progress'
 const props = defineProps<{
   levelIndex: number
   compact?: boolean
-  /** Pips only: on Home the glass already shows how many more are needed. */
-  hideCount?: boolean
 }>()
 const { t } = useI18n()
 const progress = useProgress()
@@ -39,7 +37,7 @@ const toGo = computed(() => answersToMastery(level.value, answers.value))
         >{{ i <= done ? '✓' : '' }}</span
       >
     </span>
-    <span v-if="!hideCount" class="text-xs whitespace-nowrap text-ink-muted">
+    <span class="text-xs whitespace-nowrap text-ink-muted">
       {{ t('meter.toGoShort', { n: toGo }) }}
     </span>
   </span>

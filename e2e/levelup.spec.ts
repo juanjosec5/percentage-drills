@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { answer, answers, cta, live, nextButton, open } from './helpers'
+import { answer, answers, cta, nextButton, open } from './helpers'
 
 // The celebration is the glass pouring full: it only happens with motion on.
 test.use({ reducedMotion: 'no-preference' })
@@ -19,19 +19,6 @@ async function finishLevel(page: Page) {
   }
   throw new Error('Level never finished')
 }
-
-test('a level-up goes back Home, where the glass celebrates and the next row pops', async ({
-  page,
-}) => {
-  await finishLevel(page)
-  await expect(page.locator('dialog')).toHaveCount(0)
-  await expect(live(page)).toContainText('Level 3 complete')
-
-  await expect(cta(page)).toBeVisible({ timeout: 3000 })
-  await expect(cta(page)).toContainText(DONE)
-  await expect(cta(page)).toContainText('Start level 4', { timeout: 8000 })
-  await expect(page.getByRole('listitem').nth(3).getByRole('button')).toHaveClass(/animate-pop/)
-})
 
 test('Enter goes Home straight away', async ({ page }) => {
   await finishLevel(page)

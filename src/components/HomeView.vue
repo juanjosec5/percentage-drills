@@ -2,8 +2,8 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import LanguageToggle from './LanguageToggle.vue'
+import LevelPath from './LevelPath.vue'
 import LiquidCta from './LiquidCta.vue'
-import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
@@ -24,8 +24,7 @@ const toGo = computed(() =>
   answersToMastery(LEVELS[progress.unlocked], progress.history[LEVELS[progress.unlocked].id] ?? []),
 )
 const levelFill = computed(() => (progress.allMastered ? 1 : (GOAL - toGo.value) / GOAL))
-const isMastered = (i: number) => i < progress.unlocked || progress.allMastered
-const isCurrent = (i: number) => i === progress.unlocked && !progress.allMastered
+const firstRun = computed(() => Object.keys(progress.days).length === 0)
 
 // The level that opened since Home was last shown: its row and the new ★ pop in, timed after the
 // glass has poured full (module scope, so it survives the trip to the drill and back).
@@ -94,92 +93,45 @@ const OPEN_DELAY_MS = 1100
       <div class="rainbow mt-2 h-1.5 w-28 animate-rainbow rounded-full" />
     </header>
 
-    <LiquidCta
-      ref="ctaEl"
-      :fill="levelFill"
-      :level-key="progress.unlocked"
-      :celebrate-label="t('drill.levelDone', { n: progress.unlocked })"
-      :quiet="progress.justPlaced"
-      :label="
-        progress.dailyDone
-          ? t('home.endless')
-          : t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 })
-      "
-      :progress-label="progress.allMastered ? '' : t('meter.toGoShort', { n: toGo })"
-      @click="emit('start', ctaMode, progress.unlocked)"
-    />
+    <LevelPath :just-opened="justOpened" @start="(i) => emit('start', 'endless', i)">
+      <template #current>
+        <LiquidCta
+          ref="ctaEl"
+          :fill="levelFill"
+          :level-key="progress.unlocked"
+          :heading="t(LEVELS[progress.unlocked].title)"
+          :celebrate-label="t('drill.levelDone', { n: progress.unlocked })"
+          :quiet="progress.justPlaced"
+          :label="
+            progress.dailyDone
+              ? t('home.endless')
+              : t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 })
+          "
+          :progress-label="progress.allMastered ? '' : t('meter.toGoShort', { n: toGo })"
+          @click="emit('start', ctaMode, progress.unlocked)"
+        />
+      </template>
+    </LevelPath>
 
-    <!-- Offered, never forced: outlined so it can't outrank Start. Shown while it could still
-         open a higher level. -->
-    <button
-      v-if="progress.canPlace"
-      class="group relative -mt-1 flex min-h-13 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-cta/40 bg-white px-4 font-semibold text-cta transition-colors duration-300 hover:border-cta hover:text-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-cta"
-      @click="emit('place')"
-    >
-      <!-- The violet fills in from the left on hover. -->
-      <span
-        class="absolute inset-0 origin-left scale-x-0 bg-cta transition-transform duration-300 ease-out group-hover:scale-x-100"
-        aria-hidden="true"
-      />
-      <span class="relative">{{ t('home.findLevel') }}</span>
-      <span class="relative" aria-hidden="true">≫</span>
-    </button>
-
-    <!-- Once the set is done the main button already starts endless practice. -->
-    <button
-      v-if="!progress.dailyDone"
-      class="-mt-2 block text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline"
-      @click="emit('start', 'endless', progress.unlocked)"
-    >
-      {{ t('home.endlessLink') }}
-    </button>
-
-    <ol class="space-y-1" :aria-label="t('home.levels')">
-      <li v-for="(level, i) in LEVELS" :key="level.id">
-        <button
-          class="relative flex min-h-11 w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2 text-left transition-colors enabled:hover:bg-panel disabled:opacity-45"
-          :class="{
-            'card-action bg-panel py-3 shadow-soft': isCurrent(i),
-            'animate-pop': justOpened !== null && (i === justOpened || i === justOpened - 1),
-          }"
-          :disabled="i > progress.unlocked"
-          @click="emit('start', 'endless', i)"
-        >
-          <span
-            v-if="isCurrent(i)"
-            class="absolute inset-y-0 left-0 w-1 bg-cta"
-            aria-hidden="true"
-          />
-          <span class="w-6 shrink-0 font-mono text-ink-muted">{{ i + 1 }}</span>
-          <span class="min-w-0 flex-1 space-y-1.5">
-            <span class="block font-medium">{{ t(level.title) }}</span>
-            <MasteryMeter v-if="isCurrent(i)" :level-index="i" hide-count />
-          </span>
-          <span
-            v-if="isMastered(i) && progress.isPlaced(i)"
-            role="img"
-            :aria-label="t('home.placed')"
-            class="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-star text-sm text-ink-muted"
-            >☆</span
-          >
-          <span
-            v-else-if="isMastered(i)"
-            :class="{ 'animate-pop': justOpened !== null && i === justOpened - 1 }"
-            role="img"
-            :aria-label="t('home.mastered')"
-            class="flex size-6 shrink-0 items-center justify-center rounded-full bg-star text-sm text-ink shadow-soft"
-            >★</span
-          >
-          <span
-            v-else-if="!isCurrent(i)"
-            role="img"
-            :aria-label="t('home.locked')"
-            class="flex size-6 shrink-0 items-center justify-center text-sm"
-            >🔒</span
-          >
-        </button>
-      </li>
-    </ol>
+    <!-- Quiet secondary actions: the path and its glass are the main thing. -->
+    <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+      <button
+        v-if="!progress.dailyDone"
+        class="text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+        @click="emit('start', 'endless', progress.unlocked)"
+      >
+        {{ t('home.endlessLink') }}
+      </button>
+      <!-- Offered on a fresh start in violet; later it stays available, but quiet. -->
+      <button
+        v-if="progress.canPlace"
+        class="underline-offset-4 hover:underline"
+        :class="firstRun ? 'font-semibold text-cta' : 'text-ink-muted hover:text-ink'"
+        @click="emit('place')"
+      >
+        {{ t('home.findLevel') }}
+      </button>
+    </div>
 
     <div class="flex gap-4 text-xs text-ink-muted [&>button]:underline">
       <button @click="confirmReset">{{ t('home.reset') }}</button>

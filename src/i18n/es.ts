@@ -19,7 +19,7 @@ export const es: Dictionary = {
   'home.endlessLink': 'Práctica libre →',
   'home.levels': 'Niveles',
   'home.placed': 'Saltado',
-  'home.findLevel': 'Buscar mi nivel · 6 preguntas',
+  'home.findLevel': 'Buscar mi nivel →',
   'drill.tooEasy': '¿Muy fácil? Buscar mi nivel →',
   'placement.step': '{n} de {total}',
   'placement.same': 'Tu nivel se mantiene',

@@ -35,15 +35,21 @@ function showFallback() {
   root.replaceChildren(box)
 }
 
-/** Only a blank screen gets the fallback: an error that leaves the app on screen just logs. */
+/**
+ * The fallback is for an app that can't start: any error during the first render (Home can come
+ * up half-drawn, without its Start button), or a blank screen later. An error that leaves a
+ * working app on screen just logs.
+ */
+let starting = true
 const blank = () => !root.firstElementChild
 
 const app = createApp(App).use(createPinia())
 app.config.errorHandler = (err) => {
   console.error(err)
+  const failedStart = starting
   // After the current render settles: a failed component renders as an empty comment.
   setTimeout(() => {
-    if (blank()) showFallback()
+    if (failedStart || blank()) showFallback()
   })
 }
 try {
@@ -52,3 +58,4 @@ try {
   console.error(err)
   showFallback()
 }
+starting = false

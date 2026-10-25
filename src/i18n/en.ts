@@ -17,7 +17,7 @@ export const en = {
   'home.levels': 'Levels',
   'home.mastered': 'Mastered',
   'home.placed': 'Skipped',
-  'home.findLevel': 'Find my level · 6 questions',
+  'home.findLevel': 'Find my level →',
   'drill.tooEasy': 'Too easy? Find my level →',
   'placement.step': '{n} of {total}',
   'placement.same': 'Your level stays',
