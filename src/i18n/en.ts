@@ -40,7 +40,6 @@ export const en = {
   'drill.back': 'Back',
   'drill.average': 'avg {time}',
   'drill.progressDaily': 'Daily set',
-  'drill.progressEndless': 'Round of 10',
   'drill.level': 'Level {n}',
   'drill.timer': 'Timer',
   'drill.answer': 'Answer',

@@ -23,4 +23,7 @@ test('wrong answers never take one back, and review problems are tagged', async 
   }
   await expect(page.getByText('7 more')).toBeVisible()
   expect(sawReview).toBe(true)
+  // Endless has no end: a plain tally and no bar, nothing that reads as a target.
+  await expect(page.getByRole('progressbar')).toHaveCount(0)
+  await expect(page.getByText(/^✓ 0 · avg/)).toBeVisible()
 })
