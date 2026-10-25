@@ -11,7 +11,7 @@ import MasteryMeter from './MasteryMeter.vue'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
-import { isCorrect, parseAnswer } from '@/engine/math'
+import { isCorrect, isPartialAnswer, parseAnswer } from '@/engine/math'
 import { counts, GOAL, type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
 import type { Msg } from '@/i18n'
@@ -50,7 +50,7 @@ const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
 
 const canSubmit = computed(() => parseAnswer(input.value) !== null)
-const invalid = computed(() => input.value.trim() !== '' && !canSubmit.value)
+const invalid = computed(() => !canSubmit.value && !isPartialAnswer(input.value))
 // With the timer off nothing ticks while answering; the time still shows once it's answered.
 const showTime = computed(() => progress.settings.showTimer || phase.value !== 'asking')
 const verdictClass = computed(() => (wasCorrect.value ? 'text-correct' : 'text-wrong'))

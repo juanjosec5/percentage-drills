@@ -1,4 +1,12 @@
-import { applyChange, fmt, isCorrect, parseAnswer, percentOf, whatPercent } from '@/engine/math'
+import {
+  applyChange,
+  fmt,
+  isCorrect,
+  isPartialAnswer,
+  parseAnswer,
+  percentOf,
+  whatPercent,
+} from '@/engine/math'
 
 describe('percent math', () => {
   it('computes percentages without float noise', () => {
@@ -65,5 +73,24 @@ describe('answer parsing', () => {
     expect(isCorrect('10.50', 10.5)).toBe(true)
     expect(isCorrect('10', 10.5)).toBe(false)
     expect(isCorrect('', 0)).toBe(false)
+  })
+})
+
+describe('typing an answer', () => {
+  // Every in-between state of a real answer must be either a number or still being typed: never
+  // flagged. This is what made "Numbers only" flash before each decimal digit.
+  it.each(['437.2', '437,2', '0.5', ',5', '6,085', '15034', '-3.25', '$68', '20%'])(
+    'never flags a keystroke on the way to %s',
+    (answer) => {
+      for (let i = 1; i <= answer.length; i++) {
+        const typed = answer.slice(0, i)
+        expect(parseAnswer(typed) !== null || isPartialAnswer(typed), typed).toBe(true)
+      }
+    },
+  )
+
+  it('still flags what can never become a number', () => {
+    for (const typed of ['abc', '1.2.3', '4..', '12a', '1,,5'])
+      expect(parseAnswer(typed) === null && !isPartialAnswer(typed), typed).toBe(true)
   })
 })
