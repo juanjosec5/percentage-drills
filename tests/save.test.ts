@@ -163,13 +163,13 @@ describe('backups', () => {
     expect(parseBackup(JSON.stringify(file))?.history).toEqual({ one: [R] })
   })
 
-  it('rejects anything that is not a Percent Drills save', () => {
+  it('rejects anything that is not a Plip save', () => {
     for (const text of ['', 'not json', 'null', '42', '[]', '{}', '{"name":"other app"}'])
       expect(parseBackup(text), text).toBeNull()
   })
 
   it('names the file by day', () => {
-    expect(backupName('2026-10-23')).toBe('percent-drills-2026-10-23.json')
+    expect(backupName('2026-10-23')).toBe('plip-2026-10-23.json')
   })
 })
 

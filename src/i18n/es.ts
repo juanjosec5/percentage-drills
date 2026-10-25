@@ -6,7 +6,7 @@ const plural = (one: string, many: string) => (p: Record<string, unknown>) =>
   p.n === 1 ? one : many
 
 export const es: Dictionary = {
-  'app.title': 'Percent Drills',
+  'app.title': 'Plip',
   'lang.label': 'Idioma',
   seconds: '{s:1} s',
   'streak.aria': plural('Racha de {n} día', 'Racha de {n} días'),
@@ -33,7 +33,7 @@ export const es: Dictionary = {
   'home.export': 'Exportar',
   'home.import': 'Importar',
   'home.importConfirm': '¿Reemplazar tu progreso con este archivo?',
-  'home.importInvalid': 'No es un archivo de Percent Drills',
+  'home.importInvalid': 'No es un archivo de Plip',
 
   'drill.levelDone': '★ ¡Nivel {n} completado!',
   'drill.reviewTag': '↺ repaso',

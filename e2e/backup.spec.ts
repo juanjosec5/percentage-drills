@@ -26,7 +26,7 @@ test('export downloads the save, and importing it brings the progress back', asy
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export' }).click()
   const file = await download
-  expect(file.suggestedFilename()).toBe('percent-drills-2026-10-23.json')
+  expect(file.suggestedFilename()).toBe('plip-2026-10-23.json')
   const contents = await readFile(await file.path(), 'utf8')
   expect(JSON.parse(contents)).toMatchObject({ version: 4, placedUpTo: 0, ...SAVE })
 
@@ -62,7 +62,7 @@ test('a file that is not a save is turned away', async ({ page }) => {
   await importFile(page, '{"name":"something else"}')
   const dialog = await alert
   expect(dialog.type()).toBe('alert')
-  expect(dialog.message()).toBe('Not a Percent Drills file')
+  expect(dialog.message()).toBe('Not a Plip file')
   await dialog.accept()
   await expect(cta(page)).toContainText('level 4')
 })

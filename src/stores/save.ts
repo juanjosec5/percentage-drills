@@ -4,7 +4,10 @@
 import { LEVELS } from '@/engine/levels'
 import type { Answer } from '@/engine/mastery'
 
-/** Still `v1`: renaming the key would strand every existing save. The format version is inside. */
+/**
+ * Still `percent-drills:v1`, the app's first name: renaming the key would strand every existing
+ * save. The format version is inside.
+ */
 export const KEY = 'percent-drills:v1'
 export const SAVE_VERSION = 4
 /**
@@ -155,4 +158,4 @@ export function parseBackup(text: string): Saved | null {
   return normalize(raw)
 }
 
-export const backupName = (day: string) => `percent-drills-${day}.json`
+export const backupName = (day: string) => `plip-${day}.json`

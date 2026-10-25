@@ -1,4 +1,4 @@
-# Percent Drills
+# Plip
 
 Mental-math practice for percentages, built like a Kumon workbook: small steps, short timed
 sessions every day, and you only move up once a step is both accurate and fast.

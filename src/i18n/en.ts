@@ -3,7 +3,7 @@
 import type { Entry } from './index'
 
 export const en = {
-  'app.title': 'Percent Drills',
+  'app.title': 'Plip',
   'lang.label': 'Language',
   seconds: '{s:1}s',
   'streak.aria': '{n}-day streak',
@@ -30,7 +30,7 @@ export const en = {
   'home.export': 'Export',
   'home.import': 'Import',
   'home.importConfirm': 'Replace your progress with this file?',
-  'home.importInvalid': 'Not a Percent Drills file',
+  'home.importInvalid': 'Not a Plip file',
 
   'drill.levelDone': '★ Level {n} complete!',
   'drill.reviewTag': '↺ review',
