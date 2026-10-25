@@ -13,6 +13,8 @@ const props = defineProps<{
   /** The level changed without a level-up (placement): fill to the new level, no celebration. */
   quiet?: boolean
   label: string
+  /** A line above the label: the level's name. */
+  heading?: string
   /** Read by screen readers instead of the percentage. */
   progressLabel: string
 }>()
@@ -190,11 +192,18 @@ const lastShown = { fill: 0, key: -1 }
       aria-hidden="true"
     />
 
+    <!-- White a little later than the %: the heading is wider, so the liquid must reach further. -->
+    <span
+      v-if="heading"
+      class="relative pl-1 text-sm font-semibold"
+      :class="level >= 0.25 ? 'text-white' : 'text-ink-muted'"
+      >{{ heading }}</span
+    >
     <!-- Frosted glass: the liquid shows through, blurred, so the label sits in the tube rather
          than on top of it. Only this small pill is blurred, to keep repaints cheap on phones. -->
     <span
       :class="{ 'animate-pop': celebrating }"
-      class="relative inline-flex items-center gap-2 rounded-xl border border-white/60 bg-white/45 px-4 py-2 text-2xl font-bold text-cta shadow-soft backdrop-blur-md sm:text-3xl"
+      class="relative inline-flex items-center gap-2 rounded-xl border border-white/60 bg-white/45 px-4 py-2 text-xl font-bold text-cta shadow-soft backdrop-blur-md sm:text-2xl"
     >
       {{ celebrating ? celebrateLabel : label }}
       <span class="inline-block transition-transform group-hover:translate-x-1">→</span>

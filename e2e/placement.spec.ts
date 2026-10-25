@@ -4,7 +4,7 @@ import { answer as answerDrill, cta, input, NOW, open, promptEl, solve, stored }
 
 type Page = import('@playwright/test').Page
 
-const skip = (page: Page) => page.getByRole('button', { name: 'Find my level · 6 questions' })
+const skip = (page: Page) => page.getByRole('button', { name: 'Find my level →' })
 const resultEl = (page: Page) =>
   page.locator('section.card').filter({ has: page.locator('p.text-3xl') })
 const verdictEl = (page: Page) => page.locator('section.card p.text-xl')
@@ -61,6 +61,8 @@ test('passing Beginner and missing Intermediate starts the learner at Intermedia
   await expect(cta(page)).toContainText('Start level 5')
   await expect(cta(page)).not.toContainText('complete')
   const levels = page.getByRole('list', { name: 'Levels' })
+  // Beginner is done, so it's folded to one line: open it to see the skipped levels.
+  await levels.getByRole('button', { name: /Beginner/ }).click()
   await expect(levels.getByRole('img', { name: 'Skipped' })).toHaveCount(4)
   await expect(levels.getByRole('img', { name: 'Mastered' })).toHaveCount(0)
   // Placed at level 5, it could still open Advanced, so it stays.
