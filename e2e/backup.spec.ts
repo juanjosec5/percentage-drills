@@ -7,7 +7,7 @@ import { answers, cta, dayKey, open, stored } from './helpers'
 const SAVE = {
   unlocked: 3,
   history: { tens: answers(3) },
-  days: { [dayKey()]: { answered: 10, correct: 9, totalMs: 9000, bestMs: 800, daily: 0 } },
+  days: { [dayKey()]: { answered: 10, correct: 9, totalMs: 9000, bestMs: 800 } },
 }
 
 /** Picks `contents` in the file chooser that the Import button opens. */

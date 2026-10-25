@@ -1,5 +1,5 @@
 // Everything the learner has done, saved in localStorage: answers per level (for mastery),
-// per-day totals (for the daily set and streak) and the highest unlocked level.
+// per-day totals (for the day's goal and the streak) and the highest unlocked level.
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -10,11 +10,10 @@ import { dayKey, streakOf } from '@/engine/streak'
 
 import { HISTORY_CAP, KEY, normalize, SAVE_VERSION, type Day, type Saved } from './save'
 
-export const DAILY_COUNT = 10
+/** Answers that make a day count toward the streak: the day's goal. */
+export const DAY_GOAL = 10
 /** Review answers that turn a placed level (☆) into a mastered one (★). */
 export const CONFIRM = 3
-
-export type Mode = 'daily' | 'endless'
 
 export { dayKey, normalize }
 export type { Saved, Settings } from './save'
@@ -63,16 +62,18 @@ export const useProgress = defineStore('progress', () => {
   )
 
   const today = computed<Day>(
-    () => days.value[dayKey()] ?? { answered: 0, correct: 0, totalMs: 0, bestMs: null, daily: 0 },
+    () => days.value[dayKey()] ?? { answered: 0, correct: 0, totalMs: 0, bestMs: null },
   )
-  const dailyDone = computed(() => today.value.daily >= DAILY_COUNT)
-
   /**
-   * Any DAILY_COUNT answers make a day practised, in either mode: practising a level from its
-   * card counts as much as the daily set does.
+   * Today's answers toward the day's goal, 0..DAY_GOAL. It never stops practice: there is one
+   * way to practise, the current level, and this only feeds the streak. (A separate "daily set"
+   * that ended the drill used to fight level progress on the same button.)
    */
+  const todayAnswered = computed(() => Math.min(today.value.answered, DAY_GOAL))
+
+  /** Any DAY_GOAL answers make a day practised. */
   const streak = computed(
-    () => streakOf((key) => (days.value[key]?.answered ?? 0) >= DAILY_COUNT).days,
+    () => streakOf((key) => (days.value[key]?.answered ?? 0) >= DAY_GOAL).days,
   )
 
   function statusOf(index: number): MasteryStatus {
@@ -107,7 +108,7 @@ export const useProgress = defineStore('progress', () => {
   let persistAsked = false
 
   /** Records one answer. Returns true when it unlocked the next level. */
-  function record(levelIndex: number, answer: Answer, mode: Mode): boolean {
+  function record(levelIndex: number, answer: Answer): boolean {
     // Asks the browser not to evict the save under storage pressure. Once there is something
     // worth keeping, not on load: some browsers weigh engagement when they decide.
     if (!persistAsked) {
@@ -125,7 +126,6 @@ export const useProgress = defineStore('progress', () => {
       day.correct++
       day.bestMs = day.bestMs === null ? answer.ms : Math.min(day.bestMs, answer.ms)
     }
-    if (mode === 'daily') day.daily++
     days.value[key] = day
 
     // Only a right answer can finish a level: celebrating straight after "Not quite" feels wrong.
@@ -168,7 +168,7 @@ export const useProgress = defineStore('progress', () => {
     isPlaced,
     place,
     today,
-    dailyDone,
+    todayAnswered,
     streak,
     allMastered,
     statusOf,

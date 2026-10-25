@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import { LEVELS } from '@/engine/levels'
 import { GOAL } from '@/engine/mastery'
 import { PLACEMENT_MAX } from '@/engine/placement'
-import { CONFIRM, DAILY_COUNT, normalize, useProgress } from '@/stores/progress'
+import { CONFIRM, DAY_GOAL, normalize, useProgress } from '@/stores/progress'
 import { SAVE_VERSION } from '@/stores/save'
 
 const fast = (correct: boolean) => ({ correct, ms: 1000 })
@@ -14,24 +14,24 @@ beforeEach(() => setActivePinia(createPinia()))
 describe('progress.record', () => {
   it('unlocks the next level on the GOAL-th right, on-time answer', () => {
     const progress = useProgress()
-    for (let i = 0; i < GOAL - 1; i++) expect(progress.record(0, fast(true), 'endless')).toBe(false)
-    expect(progress.record(0, fast(true), 'endless')).toBe(true)
+    for (let i = 0; i < GOAL - 1; i++) expect(progress.record(0, fast(true))).toBe(false)
+    expect(progress.record(0, fast(true))).toBe(true)
     expect(progress.unlocked).toBe(1)
   })
 
   it('lets wrong answers neither count nor set the learner back', () => {
     const progress = useProgress()
-    for (let i = 0; i < GOAL - 1; i++) progress.record(0, fast(true), 'endless')
-    expect(progress.record(0, fast(false), 'endless')).toBe(false)
-    expect(progress.record(0, fast(false), 'endless')).toBe(false)
+    for (let i = 0; i < GOAL - 1; i++) progress.record(0, fast(true))
+    expect(progress.record(0, fast(false))).toBe(false)
+    expect(progress.record(0, fast(false))).toBe(false)
     expect(progress.unlocked).toBe(0)
-    expect(progress.record(0, fast(true), 'endless')).toBe(true)
+    expect(progress.record(0, fast(true))).toBe(true)
   })
 
   it('does not unlock from a review answer at an earlier level', () => {
     const progress = useProgress()
     progress.unlocked = 2
-    for (let i = 0; i < GOAL; i++) expect(progress.record(0, fast(true), 'endless')).toBe(false)
+    for (let i = 0; i < GOAL; i++) expect(progress.record(0, fast(true))).toBe(false)
     expect(progress.unlocked).toBe(2)
   })
 })
@@ -42,7 +42,7 @@ describe('progress.allMastered', () => {
     const last = LEVELS.length - 1
     progress.unlocked = last
     expect(progress.allMastered).toBe(false)
-    for (let i = 0; i < GOAL; i++) expect(progress.record(last, fast(true), 'endless')).toBe(false)
+    for (let i = 0; i < GOAL; i++) expect(progress.record(last, fast(true))).toBe(false)
     expect(progress.unlocked).toBe(last)
     expect(progress.allMastered).toBe(true)
   })
@@ -117,18 +117,18 @@ describe('storage persistence', () => {
     vi.stubGlobal('navigator', { storage: { persist } })
     const progress = useProgress()
     expect(persist).not.toHaveBeenCalled()
-    progress.record(0, fast(true), 'endless')
-    progress.record(0, fast(false), 'endless')
+    progress.record(0, fast(true))
+    progress.record(0, fast(false))
     expect(persist).toHaveBeenCalledTimes(1)
   })
 
   it('records the answer where the API is missing or refuses', () => {
     vi.stubGlobal('navigator', {})
-    useProgress().record(0, fast(true), 'endless')
+    useProgress().record(0, fast(true))
     setActivePinia(createPinia())
     vi.stubGlobal('navigator', { storage: { persist: () => Promise.reject(new Error('no')) } })
     const progress = useProgress()
-    progress.record(0, fast(true), 'endless')
+    progress.record(0, fast(true))
     expect(progress.today.answered).toBe(1)
   })
 })
@@ -137,7 +137,7 @@ describe('progress.restore', () => {
   it('replaces progress from a backup and keeps settings', () => {
     const progress = useProgress()
     progress.setShowTimer(false)
-    progress.record(0, fast(true), 'daily')
+    progress.record(0, fast(true))
     const backup = normalize({
       unlocked: 4,
       history: { tens: [{ correct: true, ms: 800 }] },
@@ -154,11 +154,11 @@ describe('progress.restore', () => {
 })
 
 describe('progress.streak', () => {
-  it('counts a day of endless practice, not only the daily set', () => {
+  it('any DAY_GOAL answers make the day, and the count for today stops at the goal', () => {
     const progress = useProgress()
-    for (let i = 0; i < DAILY_COUNT; i++) progress.record(0, fast(true), 'endless')
-    expect(progress.today.daily).toBe(0)
+    for (let i = 0; i < DAY_GOAL + 3; i++) progress.record(0, fast(i % 2 === 0))
     expect(progress.streak).toBe(1)
+    expect(progress.todayAnswered).toBe(DAY_GOAL)
   })
 })
 
@@ -176,7 +176,7 @@ describe('placement', () => {
 
   it('stays on offer after answering, until it could no longer open a higher level', () => {
     const progress = useProgress()
-    progress.record(0, fast(true), 'endless')
+    progress.record(0, fast(true))
     expect(progress.canPlace).toBe(true)
     progress.place(PLACEMENT_MAX - 1)
     expect(progress.canPlace).toBe(true)
@@ -187,7 +187,7 @@ describe('placement', () => {
   it('turns a placed level into a mastered one after CONFIRM review answers there', () => {
     const progress = useProgress()
     progress.place(4)
-    for (let i = 0; i < CONFIRM; i++) progress.record(1, fast(true), 'endless')
+    for (let i = 0; i < CONFIRM; i++) progress.record(1, fast(true))
     expect(progress.isPlaced(1)).toBe(false)
     expect(progress.isPlaced(2)).toBe(true)
   })

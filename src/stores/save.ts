@@ -18,7 +18,6 @@ export interface Day {
   correct: number
   totalMs: number
   bestMs: number | null
-  daily: number
 }
 
 export interface Settings {
@@ -91,7 +90,6 @@ function dayOf(v: unknown): Day | null {
     correct: isCount(v.correct) ? v.correct : 0,
     totalMs: isCount(v.totalMs) ? v.totalMs : 0,
     bestMs: isCount(v.bestMs) ? v.bestMs : null,
-    daily: isCount(v.daily) ? v.daily : 0,
   }
 }
 

@@ -91,8 +91,6 @@ const showsSample = (i: number) => i === progress.unlocked + 1 || peeking.value 
 const wobble = !seen.locks
 seen.locks = true
 
-const mascotMood = computed(() => (progress.dailyDone ? 'sleep' : 'idle'))
-
 // The flying mascot and the rail that fills behind it, positioned from the rendered rows.
 const rows = new Map<number, HTMLElement>()
 const rowRef = (i: number) => (el: unknown) => {
@@ -219,7 +217,7 @@ onBeforeUnmount(() => {
         >
           <template v-if="isCurrent(i)">
             <span class="node node-current" aria-hidden="true">
-              <MascotDrop v-if="flyerTop === null" :mood="mascotMood" :size="40" />
+              <MascotDrop v-if="flyerTop === null" mood="idle" :size="40" />
             </span>
             <!-- Laid out but hidden during the hop, so the drop lands where the glass will be. -->
             <div

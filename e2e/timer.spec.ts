@@ -58,7 +58,7 @@ test('reset erases progress but keeps the timer setting', async ({ page }) => {
   await open(page, {
     unlocked: 2,
     history: {},
-    days: { [dayKey()]: { answered: 3, correct: 3, totalMs: 3000, bestMs: 900, daily: 3 } },
+    days: { [dayKey()]: { answered: 3, correct: 3, totalMs: 3000, bestMs: 900 } },
     settings: { showTimer: false },
   })
   page.once('dialog', (d) => d.accept())

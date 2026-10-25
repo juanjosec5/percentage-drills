@@ -12,15 +12,13 @@ import StreakChip from './StreakChip.vue'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
 import { answersToMastery, GOAL } from '@/engine/mastery'
-import { dayKey, useProgress, type Mode } from '@/stores/progress'
+import { DAY_GOAL, dayKey, useProgress } from '@/stores/progress'
 import { backupName, parseBackup } from '@/stores/save'
 
-const emit = defineEmits<{ start: [mode: Mode, level: number]; place: [] }>()
+const emit = defineEmits<{ start: [level: number]; place: [] }>()
 const progress = useProgress()
 const { t } = useI18n()
 
-// The main button: today's daily set first, endless practice after.
-const ctaMode = computed<Mode>(() => (progress.dailyDone ? 'endless' : 'daily'))
 const isNewLevel = computed(() => progress.statusOf(progress.unlocked).answered === 0)
 // The glass shows how close the current level is to done ("5 more" = half full), the same
 // measure as the drill's meter, so the two never disagree.
@@ -83,17 +81,13 @@ async function importProgress(event: Event) {
     <header>
       <div class="flex items-center gap-2">
         <h1 class="mr-auto text-3xl font-bold">{{ t('app.title') }}</h1>
-        <StreakChip v-if="progress.streak" :days="progress.streak" />
+        <StreakChip :days="progress.streak" :today="progress.todayAnswered" :goal="DAY_GOAL" />
         <LanguageToggle />
       </div>
       <div class="rainbow mt-2 h-1.5 w-28 animate-rainbow rounded-full" />
     </header>
 
-    <LevelPath
-      :level-up="levelUp"
-      @start="(i) => emit('start', 'endless', i)"
-      @settled="ctaEl?.focus()"
-    >
+    <LevelPath :level-up="levelUp" @start="(i) => emit('start', i)" @settled="ctaEl?.focus()">
       <template #current="{ onFull, level }">
         <LiquidCta
           ref="ctaEl"
@@ -102,13 +96,9 @@ async function importProgress(event: Event) {
           :heading="t(LEVELS[level].title)"
           :celebrate-label="t('drill.levelDone', { n: progress.unlocked })"
           :quiet="progress.justPlaced"
-          :label="
-            progress.dailyDone
-              ? t('home.endless')
-              : t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 })
-          "
+          :label="t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 })"
           :progress-label="progress.allMastered ? '' : t('meter.toGoShort', { n: toGo })"
-          @click="emit('start', ctaMode, progress.unlocked)"
+          @click="emit('start', progress.unlocked)"
           @full="onFull"
         />
       </template>
@@ -116,13 +106,6 @@ async function importProgress(event: Event) {
 
     <!-- Quiet secondary actions: the path and its glass are the main thing. -->
     <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-      <button
-        v-if="!progress.dailyDone"
-        class="text-ink-muted underline-offset-4 hover:text-ink hover:underline"
-        @click="emit('start', 'endless', progress.unlocked)"
-      >
-        {{ t('home.endlessLink') }}
-      </button>
       <!-- Offered on a fresh start in violet; later it stays available, but quiet. -->
       <button
         v-if="progress.canPlace"
