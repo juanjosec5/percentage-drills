@@ -29,18 +29,19 @@ describe('dictionaries', () => {
 })
 
 describe('translate', () => {
-  it('formats numbers for the locale and writes "15%" with no space', () => {
+  it('writes numbers the same in both languages, and "15%" with no space', () => {
     expect(translate('en', msg('prompt.of', { pct: 15, base: 640 }))).toBe('15% of 640')
+    expect(translate('es', msg('prompt.of', { pct: 10, base: 15034 }))).toBe('10% de 15,034')
     expect(translate('es', msg('prompt.of', { pct: 15, base: 640 }))).toBe('15% de 640')
-    expect(translate('es', msg('drill.wrong', { answer: 63.5 }))).toBe('Uy, no: es 63,5')
-    expect(translate('es', msg('seconds', { s: 1.23 }))).toBe('1,2 s')
+    expect(translate('es', msg('drill.wrong', { answer: 63.5 }))).toBe('Uy, no: es 63.5')
+    expect(translate('es', msg('seconds', { s: 1.23 }))).toBe('1.2 s')
     expect(translate('en', msg('seconds', { s: 1.23 }))).toBe('1.2s')
   })
 
   it('translates nested messages and joins lists', () => {
     const how = msg('how.half')
     const step = msg('step.pieceOf', { pct: 50, base: 7, value: 3.5, how })
-    expect(translate('es', step)).toBe('50% de 7 = 3,5 · ÷ 2')
+    expect(translate('es', step)).toBe('50% de 7 = 3.5 · ÷ 2')
     const sum = msg('result.sum', { pct: 15, sum: [7, ' + ', 3.5], answer: 10.5 })
     expect(translate('en', sum)).toBe('15% = 7 + 3.5 = 10.5')
   })

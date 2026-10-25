@@ -80,7 +80,7 @@ export const en = {
   'how.fifth': '÷ 5',
 
   'level.ten-any.title': '10%',
-  'level.ten-any.strategy': '10% of 4\u202f372 = 437.2',
+  'level.ten-any.strategy': '10% of 4,372 = 437.2',
   'level.five.title': '5%',
   'level.five.strategy': '5% of 70 = half of 7 = 3.5',
   'level.one.title': '1%',

@@ -4,7 +4,6 @@
 // at the level reached.
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-import GroupedText from './GroupedText.vue'
 import { useI18n } from '@/composables/useI18n'
 import { useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, type Problem } from '@/engine/levels'
@@ -77,9 +76,7 @@ onMounted(ask)
     </header>
 
     <section v-if="problem" class="card space-y-5 text-center">
-      <p class="font-mono text-4xl font-semibold sm:text-5xl">
-        <GroupedText :text="t(problem.prompt)" />
-      </p>
+      <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
       <form class="flex gap-2" @submit.prevent="submit">
         <input
           ref="inputEl"

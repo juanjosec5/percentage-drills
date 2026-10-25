@@ -19,7 +19,7 @@ test.describe('Spanish browser', () => {
     expect(await page.evaluate((k) => localStorage.getItem(k), LANG_KEY)).toBeNull()
   })
 
-  test('a Spanish drill has no English, "15%" with no space and a decimal comma', async ({
+  test('a Spanish drill has no English, "15%" with no space and a decimal point', async ({
     page,
   }) => {
     // Level 6 ("15%"), part-way through.
@@ -43,14 +43,13 @@ test.describe('Spanish browser', () => {
       await answer(page, true, 'es')
       await nextButton(page).press('Enter')
     }
-    const right = String(solve(await promptEl(page).innerText())).replace('.', ',')
-    expect(right).toMatch(/^\d+,\d+$/)
+    const right = String(solve(await promptEl(page).innerText()))
+    expect(right).toMatch(/^\d+\.\d+$/)
     await answer(page, false, 'es')
     await expect(page.locator('section.card p.text-xl')).toHaveText(`✗ Uy, no: es ${right}`)
-    await expect(page.locator('section.card p.tabular-nums')).toHaveText(/^\d+,\d s$/)
-    // 15% is 10% + 5%, and every decimal shows with a comma.
+    await expect(page.locator('section.card p.tabular-nums')).toHaveText(/^\d+\.\d s$/)
+    // 15% is 10% + 5%.
     await expect(page.locator('ol.font-mono')).toContainText('½ del 10%')
-    await expect(page.locator('section.card')).not.toContainText(/\d\.\d/)
     expect(englishIn(await page.locator('body').innerText())).toEqual([])
   })
 })
