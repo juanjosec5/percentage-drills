@@ -1,5 +1,5 @@
 // Neutral Latin American Spanish, with "tú". "15%" with no space, as in English (owner's call).
-// Decimals in the hand-written examples use a comma.
+// Numbers look the same as in English (15,034 · 3.5): one notation, as on Colombian price tags.
 import type { Dictionary } from './index'
 
 const plural = (one: string, many: string) => (p: Record<string, unknown>) =>
@@ -87,17 +87,17 @@ export const es: Dictionary = {
   'how.fifth': '÷ 5',
 
   'level.ten-any.title': '10%',
-  'level.ten-any.strategy': '10% de 4\u202f372 = 437,2',
+  'level.ten-any.strategy': '10% de 4,372 = 437.2',
   'level.five.title': '5%',
-  'level.five.strategy': '5% de 70 = la mitad de 7 = 3,5',
+  'level.five.strategy': '5% de 70 = la mitad de 7 = 3.5',
   'level.one.title': '1%',
-  'level.one.strategy': '1% de 450 = 450 ÷ 100 = 4,5',
+  'level.one.strategy': '1% de 450 = 450 ÷ 100 = 4.5',
   'level.tens.title': '20% … 90%',
   'level.tens.strategy': '30% de 70 = 3 × 7 = 21',
   'level.fractions.title': '50%, 25%, 75%, 20%',
   'level.fractions.strategy': '50% = ½ · 25% = ¼ · 75% = ¾ · 20% = ⅕',
   'level.fifteen.title': '15%',
-  'level.fifteen.strategy': '15% de 70 = 7 + 3,5 = 10,5',
+  'level.fifteen.strategy': '15% de 70 = 7 + 3.5 = 10.5',
   'level.build.title': '12%, 19%, 35%…',
   'level.build.strategy': '19% = 20% − 1%',
   'level.swap.title': 'Truco de voltear',

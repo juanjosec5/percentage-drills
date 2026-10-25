@@ -62,9 +62,9 @@ export const nextButton = (page: Page) => page.getByRole('button', { name: /^(Ne
 
 /** Works out the answer to an English or Spanish prompt from its text alone. */
 export function solve(text: string): number {
-  // Thousands are grouped with a narrow no-break space (43 720).
-  const prompt = text.replaceAll('\u202f', '')
-  const n = (s: string) => Number(s.replace(',', '.'))
+  // Commas only ever mark thousands (15,034); decimals use a point in both languages.
+  const prompt = text.replaceAll(',', '')
+  const n = Number
   const r2 = (x: number) => Math.round(x * 100) / 100
   let m
   if ((m = prompt.match(/^([\d.,]+)% (?:of|de) ([\d.,]+)$/))) return r2((n(m[1]) * n(m[2])) / 100)
@@ -78,6 +78,7 @@ export function solve(text: string): number {
 /** Types an answer to the problem on screen and submits it; `right: false` types a wrong one. */
 export async function answer(page: Page, right = true, lang: 'en' | 'es' = 'en') {
   const value = solve(await promptEl(page).innerText()) + (right ? 0 : 1)
+  // In Spanish, type a decimal comma, as a Spanish phone's number pad does.
   await input(page).fill(lang === 'es' ? String(value).replace('.', ',') : String(value))
   await input(page).press('Enter')
   await expect(nextButton(page)).toBeFocused()

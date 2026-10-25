@@ -5,7 +5,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
-import GroupedText from './GroupedText.vue'
 import LanguageToggle from './LanguageToggle.vue'
 import MasteryMeter from './MasteryMeter.vue'
 import StreakChip from './StreakChip.vue'
@@ -250,10 +249,8 @@ onBeforeUnmount(() => {
       class="card space-y-5 text-center"
       :class="{ 'animate-glow': phase === 'feedback' && wasCorrect }"
     >
-      <p v-if="tip" class="font-mono text-sm text-ink-muted"><GroupedText :text="t(tip)" /></p>
-      <p class="font-mono text-4xl font-semibold sm:text-5xl">
-        <GroupedText :text="t(problem.prompt)" />
-      </p>
+      <p v-if="tip" class="font-mono text-sm text-ink-muted">{{ t(tip) }}</p>
+      <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
       <!-- Stays grey after answering: the verdict line alone carries right/wrong. -->
       <p v-if="showTime" class="font-mono text-lg text-ink-muted tabular-nums">
         {{ t(seconds(clock.ms.value)) }}
