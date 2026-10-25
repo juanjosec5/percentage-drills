@@ -41,6 +41,7 @@ export const en = {
   'drill.average': 'avg {time}',
   'drill.level': 'Level {n}',
   'drill.timer': 'Timer',
+  'drill.haptics': 'Vibration',
   'drill.answer': 'Answer',
   'drill.check': 'Check',
   'drill.invalid': 'Numbers only',
