@@ -33,7 +33,9 @@ export const en = {
 
   'drill.dayDone': 'Day done',
   'drill.levelDone': '★ Level {n} complete!',
-  'drill.reviewTag': '↺ review',
+  'drill.reviewTag': '↺ review, not counted',
+  'drill.limit': '/ {s}s',
+  'drill.slow': '⏱ over {s}s, not counted',
   'meter.toGoShort': '{n} more',
   'meter.label': '{done} of {goal}',
 

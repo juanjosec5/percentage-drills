@@ -2,9 +2,27 @@
 // Plip, the mascot: a drop of the violet liquid from the Start glass. It only reacts (no speech, no
 // text), so it's always decorative and hidden from screen readers. Every animation plays a few
 // times and stops: nothing here moves for longer than 5s.
-export type Mood = 'idle' | 'happy' | 'oops' | 'cheer' | 'sleep'
+import { computed } from 'vue'
 
-withDefaults(defineProps<{ mood?: Mood; size?: number }>(), { mood: 'idle', size: 40 })
+export type Mood = 'idle' | 'happy' | 'oops' | 'cheer' | 'sleep'
+/** Eyes set from outside (PlipAlive's reactions), instead of the mood's. */
+export type Eyes = 'open' | 'shut' | 'wide' | 'blink'
+
+const props = withDefaults(
+  defineProps<{
+    mood?: Mood
+    size?: number
+    eyes?: Eyes
+    /** A transform for the eyes alone, e.g. to keep them round while the body squashes. */
+    eyeStyle?: string
+  }>(),
+  { mood: 'idle', size: 40, eyes: undefined, eyeStyle: undefined },
+)
+/** Eye radii for the free eyes: wide when startled, a sliver mid-blink. */
+const eyeR = computed(() => ({
+  rx: props.eyes === 'wide' ? 4.5 : 3.5,
+  ry: props.eyes === 'blink' ? 0.8 : props.eyes === 'wide' ? 6.5 : 5,
+}))
 </script>
 
 <template>
@@ -27,7 +45,21 @@ withDefaults(defineProps<{ mood?: Mood; size?: number }>(), { mood: 'idle', size
         opacity="0.35"
         transform="rotate(20 21 40)"
       />
-      <g class="fill-none stroke-ink" stroke-width="3.5" stroke-linecap="round">
+      <!-- Eyes driven from outside: open, squeezed shut (^ ^), wide, or mid-blink. -->
+      <g v-if="eyes" class="drop-eyes-free" :style="eyeStyle">
+        <path
+          v-if="eyes === 'shut'"
+          d="M21 50l4-5 4 5M35 50l4-5 4 5"
+          class="fill-none stroke-ink"
+          stroke-width="3.5"
+          stroke-linecap="round"
+        />
+        <g v-else class="fill-ink">
+          <ellipse cx="25" cy="47" v-bind="eyeR" />
+          <ellipse cx="39" cy="47" v-bind="eyeR" />
+        </g>
+      </g>
+      <g v-else class="fill-none stroke-ink" stroke-width="3.5" stroke-linecap="round">
         <!-- Happy and cheering: ^ ^ eyes. -->
         <template v-if="mood === 'happy' || mood === 'cheer'">
           <path d="M21 50l4-5 4 5M35 50l4-5 4 5" />
@@ -41,7 +73,7 @@ withDefaults(defineProps<{ mood?: Mood; size?: number }>(), { mood: 'idle', size
           <path d="M21 48q4 3 8 0M35 48q4 3 8 0" />
         </template>
       </g>
-      <g v-if="mood === 'idle'" class="drop-eyes fill-ink">
+      <g v-if="!eyes && mood === 'idle'" class="drop-eyes fill-ink">
         <ellipse cx="25" cy="47" rx="3.5" ry="5" />
         <ellipse cx="39" cy="47" rx="3.5" ry="5" />
       </g>
@@ -82,6 +114,10 @@ withDefaults(defineProps<{ mood?: Mood; size?: number }>(), { mood: 'idle', size
   transform-box: fill-box;
   transform-origin: 50% 50%;
   animation: drop-splash 0.9s ease-out both;
+}
+.drop-eyes-free {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
 }
 .drop-sleep .drop-body {
   transform: scaleY(0.94);

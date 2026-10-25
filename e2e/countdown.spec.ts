@@ -23,7 +23,7 @@ test('wrong answers never take one back, and review problems are tagged', async 
   }
   await expect(page.getByText('7 more')).toBeVisible()
   expect(sawReview).toBe(true)
-  // Practice has no fixed end: a plain tally and no bar, nothing that reads as a target.
+  // The pips are the only count on screen: no bar, no tally of right answers, just the average.
   await expect(page.getByRole('progressbar')).toHaveCount(0)
-  await expect(page.getByText(/✓ 0 · avg/)).toBeVisible()
+  await expect(page.getByText(/^\s*avg [\d.]+s\s*$/)).toBeVisible()
 })

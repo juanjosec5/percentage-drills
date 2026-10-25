@@ -20,6 +20,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BurstRing from './BurstRing.vue'
 import MascotDrop from './MascotDrop.vue'
+import PlipAlive from './PlipAlive.vue'
+import { BUZZ, useHaptics } from '@/composables/useHaptics'
 import { useI18n } from '@/composables/useI18n'
 import { LEVELS } from '@/engine/levels'
 import { createRng } from '@/engine/rng'
@@ -33,6 +35,7 @@ const props = defineProps<{
 const emit = defineEmits<{ start: [level: number]; settled: [] }>()
 const { t } = useI18n()
 const progress = useProgress()
+const haptics = useHaptics()
 
 // The level-up moment, in phases. 'pour': the glass fills to the top on the finished row.
 // 'burst': that row turns into a ★ with a burst. 'hop': the drop hops down the rail to the next
@@ -108,6 +111,7 @@ const railFill = ref<{ top: number; height: number } | null>(null)
 const arrived = ref(false)
 
 let timer: ReturnType<typeof setTimeout> | undefined
+let landTimer: ReturnType<typeof setTimeout> | undefined
 let hopAnim: Animation | undefined
 
 /** The glass reached the top (or took too long): burst, then hop. */
@@ -115,6 +119,7 @@ function onFull() {
   if (phase.value !== 'pour') return
   clearTimeout(timer)
   phase.value = 'burst'
+  haptics.buzz(BUZZ.levelUp)
   nextTick(() => (flyerTop.value = nodeY(from) - BODY_Y))
   timer = setTimeout(hop, BURST_MS)
 }
@@ -138,6 +143,8 @@ async function hop() {
     ],
     { duration: HOP_MS, easing: 'ease-in-out' },
   )
+  // A light tick as Plip touches down (the hop's 85% keyframe).
+  landTimer = setTimeout(() => haptics.buzz(BUZZ.land), HOP_MS * 0.85)
   if (hopAnim) hopAnim.onfinish = settle
   else settle()
 }
@@ -151,8 +158,14 @@ function skipOnInput(on: boolean) {
 
 function settle() {
   if (phase.value === null) return
+  const skipped = phase.value !== 'hop' || (hopAnim?.playState ?? 'finished') !== 'finished'
   clearTimeout(timer)
   hopAnim?.cancel()
+  // Skipped mid-moment: the buzz that belonged to it stops too.
+  if (skipped) {
+    clearTimeout(landTimer)
+    haptics.stop()
+  }
   phase.value = null
   flyerTop.value = null
   railFill.value = null
@@ -168,6 +181,8 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   clearTimeout(timer)
+  clearTimeout(landTimer)
+  haptics.stop()
   hopAnim?.cancel()
   skipOnInput(false)
 })
@@ -217,7 +232,7 @@ onBeforeUnmount(() => {
         >
           <template v-if="isCurrent(i)">
             <span class="node node-current" aria-hidden="true">
-              <MascotDrop v-if="flyerTop === null" mood="idle" :size="40" />
+              <PlipAlive v-if="flyerTop === null" :size="40" />
             </span>
             <!-- Laid out but hidden during the hop, so the drop lands where the glass will be. It
                  fades in rather than scaling: a scale moved it under the drop that just landed. -->

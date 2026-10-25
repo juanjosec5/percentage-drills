@@ -36,7 +36,9 @@ export const es: Dictionary = {
 
   'drill.dayDone': 'Día cumplido',
   'drill.levelDone': '★ ¡Nivel {n} completado!',
-  'drill.reviewTag': '↺ repaso',
+  'drill.reviewTag': '↺ repaso, no cuenta',
+  'drill.limit': '/ {s} s',
+  'drill.slow': '⏱ más de {s} s, no cuenta',
   'meter.toGoShort': '{n} más',
   'meter.label': '{done} de {goal}',
 
