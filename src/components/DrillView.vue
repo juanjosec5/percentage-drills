@@ -66,11 +66,6 @@ const sessionAverage = computed(() =>
 const dailyAnswered = computed(() => Math.min(progress.today.daily, DAILY_COUNT))
 /** Daily mode with today's set complete: the drill ends after this answer. */
 const dailySetDone = computed(() => props.mode === 'daily' && progress.dailyDone)
-// Daily: how much of today's set is done. Endless: refills every DAILY_COUNT answers.
-const progressDone = computed(() => {
-  const n = session.value.length
-  return props.mode === 'daily' ? dailyAnswered.value : n && ((n - 1) % DAILY_COUNT) + 1
-})
 const verdict = computed(() =>
   wasCorrect.value ? t('drill.correct') : t('drill.wrong', { answer: problem.value?.answer ?? 0 }),
 )
@@ -198,24 +193,26 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="flex items-center gap-3">
+        <!-- Only the daily set has an end to fill toward. Endless practice gets no bar: one that
+             refilled every 10 answers read as a goal that was never reached. -->
         <div
+          v-if="mode === 'daily'"
           class="h-1.5 flex-1 overflow-hidden rounded-full bg-line/70 shadow-press"
           role="progressbar"
-          :aria-label="t(mode === 'daily' ? 'drill.progressDaily' : 'drill.progressEndless')"
+          :aria-label="t('drill.progressDaily')"
           aria-valuemin="0"
           :aria-valuemax="DAILY_COUNT"
-          :aria-valuenow="progressDone"
+          :aria-valuenow="dailyAnswered"
         >
           <div
             class="rainbow h-full animate-rainbow rounded-full transition-[width] duration-500 ease-out"
-            :style="{ width: `${(progressDone / DAILY_COUNT) * 100}%` }"
+            :style="{ width: `${(dailyAnswered / DAILY_COUNT) * 100}%` }"
           />
         </div>
         <p class="shrink-0 text-sm whitespace-nowrap text-ink-muted tabular-nums">
           <template v-if="mode === 'daily'">{{ dailyAnswered }}/{{ DAILY_COUNT }}</template>
-          <template v-else-if="session.length"
-            >✓ {{ sessionCorrect }}/{{ session.length }}</template
-          >
+          <!-- A tally, not a fraction: "12/12" read like a target that kept moving. -->
+          <template v-else-if="session.length">✓ {{ sessionCorrect }}</template>
           <template v-if="session.length">
             · {{ t('drill.average', { time: seconds(sessionAverage) }) }}</template
           >
