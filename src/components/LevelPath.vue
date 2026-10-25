@@ -219,10 +219,11 @@ onBeforeUnmount(() => {
             <span class="node node-current" aria-hidden="true">
               <MascotDrop v-if="flyerTop === null" mood="idle" :size="40" />
             </span>
-            <!-- Laid out but hidden during the hop, so the drop lands where the glass will be. -->
+            <!-- Laid out but hidden during the hop, so the drop lands where the glass will be. It
+                 fades in rather than scaling: a scale moved it under the drop that just landed. -->
             <div
               class="min-w-0 flex-1 py-2"
-              :class="{ 'opacity-0': phase === 'hop', 'animate-pop': arrived }"
+              :class="{ 'opacity-0': phase === 'hop', 'animate-fade': arrived }"
             >
               <slot name="current" :on-full="onFull" :level="cardRow" />
             </div>
@@ -325,8 +326,9 @@ onBeforeUnmount(() => {
   align-items: center;
   padding-left: 44px;
 }
+/* The drop sits level with the middle of the glass: 8px of row padding + half its 112px. */
 .row.current {
-  --node-y: 40px;
+  --node-y: 64px;
 }
 /* The two stretches of rail each row owns: above its node and below it. */
 .row::before,

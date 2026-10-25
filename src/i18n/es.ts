@@ -43,6 +43,7 @@ export const es: Dictionary = {
   'drill.back': 'Volver',
   'drill.average': 'promedio {time}',
   'drill.level': 'Nivel {n}',
+  'drill.haptics': 'Vibración',
   'drill.timer': 'Cronómetro',
   'drill.answer': 'Respuesta',
   'drill.check': 'Revisar',

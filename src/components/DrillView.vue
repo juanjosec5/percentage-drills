@@ -8,6 +8,7 @@ import BreakdownBar from './BreakdownBar.vue'
 import LanguageToggle from './LanguageToggle.vue'
 import MascotDrop from './MascotDrop.vue'
 import MasteryMeter from './MasteryMeter.vue'
+import { BUZZ, canVibrate, useHaptics } from '@/composables/useHaptics'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
@@ -26,6 +27,7 @@ const progress = useProgress()
 const rng = createRng()
 const clock = useStopwatch()
 const { t } = useI18n()
+const haptics = useHaptics()
 
 const level = ref(props.startLevel)
 const problem = ref<Problem>()
@@ -104,12 +106,14 @@ function submit() {
   const levelledUp = progress.record(problemLevel.value, { correct: wasCorrect.value, ms })
   dayDone.value = before < DAY_GOAL && progress.today.answered >= DAY_GOAL
   if (levelledUp) {
+    haptics.buzz(BUZZ.levelUp)
+    // The level stays on screen with all its ✓ until Home takes over: switching to the next
+    // level here showed its empty pips for a moment.
     finished.value = problemLevel.value
-    level.value = progress.unlocked
     // Back to Home, where the glass pours full and the next level opens: hard to miss, unlike a
     // popup. Enter (Next has focus) goes straight away.
     homeTimer = setTimeout(() => emit('exit'), LEVEL_UP_MS)
-  }
+  } else if (wasCorrect.value) haptics.buzz(BUZZ.right)
   nextTick(() => nextEl.value?.focus())
 }
 
@@ -165,6 +169,25 @@ onBeforeUnmount(() => {
           <span aria-hidden="true">←</span>
         </button>
         <LanguageToggle />
+        <!-- Shown only where the phone can vibrate. Struck through and dimmed when off. -->
+        <button
+          v-if="canVibrate"
+          type="button"
+          role="switch"
+          :aria-checked="haptics.enabled.value"
+          :aria-label="t('drill.haptics')"
+          :title="t('drill.haptics')"
+          class="icon-btn relative text-lg"
+          :class="haptics.enabled.value ? 'border-line bg-panel shadow-soft' : 'opacity-45'"
+          @click="haptics.setEnabled(!haptics.enabled.value)"
+        >
+          <span aria-hidden="true">📳</span>
+          <span
+            v-if="!haptics.enabled.value"
+            class="absolute h-0.5 w-7 rotate-45 rounded-full bg-ink"
+            aria-hidden="true"
+          />
+        </button>
         <!-- Struck through and dimmed when off, so the state reads without a label. -->
         <button
           type="button"
@@ -209,7 +232,7 @@ onBeforeUnmount(() => {
       </p>
       <!-- Tracks the level being climbed; review answers don't move it, so it dims for them. -->
       <MasteryMeter
-        v-if="level === progress.unlocked && !progress.allMastered"
+        v-if="(level === progress.unlocked || finished !== null) && !progress.allMastered"
         :level-index="level"
         compact
         class="transition-opacity"

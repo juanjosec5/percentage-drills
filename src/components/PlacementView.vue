@@ -5,6 +5,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import MascotDrop from './MascotDrop.vue'
+import { BUZZ, useHaptics } from '@/composables/useHaptics'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import type { Problem } from '@/engine/levels'
@@ -16,6 +17,7 @@ import { useProgress } from '@/stores/progress'
 
 const emit = defineEmits<{ done: [] }>()
 const { t } = useI18n()
+const { buzz } = useHaptics()
 const progress = useProgress()
 const rng = createRng()
 const clock = useStopwatch()
@@ -65,8 +67,10 @@ function submit() {
   last.value = { ...answer, slow: answer.correct && answer.ms > level.targetSeconds * 1000 }
   passed.value.push(passes(level, answer))
   phase.value = 'verdict'
-  if (answer.correct) after(RIGHT_MS, next)
-  else nextTick(() => nextEl.value?.focus())
+  if (answer.correct) {
+    buzz(BUZZ.right)
+    after(RIGHT_MS, next)
+  } else nextTick(() => nextEl.value?.focus())
 }
 
 function next() {
