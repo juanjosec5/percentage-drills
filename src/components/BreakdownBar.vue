@@ -3,7 +3,6 @@
 // calculation, each with its value; then the steps written out.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import GroupedText from './GroupedText.vue'
 import { useI18n } from '@/composables/useI18n'
 import type { Breakdown, Segment } from '@/engine/levels'
 import type { Msg } from '@/i18n'
@@ -104,8 +103,8 @@ const showResult = computed(() => showBar.value || props.breakdown.steps.length 
           :ref="(el) => (labelEls[i] = el as HTMLElement | null)"
           class="px-1"
           :class="{ invisible: clipped.has(i) }"
-          ><GroupedText :text="t(seg.label)"
-        /></span>
+          >{{ t(seg.label) }}</span
+        >
       </div>
     </div>
 
@@ -117,11 +116,9 @@ const showResult = computed(() => showBar.value || props.breakdown.steps.length 
           :style="{ background: fill(breakdown.segments[pieceOf[i]], pieceOf[i]) }"
           aria-hidden="true"
         />
-        <GroupedText :text="stepText(step, i)" />
+        {{ stepText(step, i) }}
       </li>
     </ol>
-    <p v-if="showResult" class="font-mono text-base font-semibold">
-      <GroupedText :text="t(breakdown.result)" />
-    </p>
+    <p v-if="showResult" class="font-mono text-base font-semibold">{{ t(breakdown.result) }}</p>
   </div>
 </template>

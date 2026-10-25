@@ -1,5 +1,5 @@
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
-import { applyChange, GROUP, percentOf, round2 } from '@/engine/math'
+import { applyChange, percentOf, round2 } from '@/engine/math'
 import { createRng } from '@/engine/rng'
 import { LOCALES, translate, type Msg } from '@/i18n'
 
@@ -8,13 +8,13 @@ const es = (m: Msg) => translate('es', m)
 
 // Like solve() below, for Spanish prompts, so a translation can't change the maths.
 function solveEs(text: string): number {
-  const prompt = text.replaceAll(GROUP, '')
-  const num = (s: string) => Number(s.replace(',', '.'))
-  let m = prompt.match(/^([\d,]+)% de ([\d,]+)$/)
+  const prompt = text.replaceAll(',', '')
+  const num = Number
+  let m = prompt.match(/^([\d.]+)% de ([\d.]+)$/)
   if (m) return percentOf(num(m[1]), num(m[2]))
-  m = prompt.match(/^¿([\d,]+) es qué % de ([\d,]+)\?$/)
+  m = prompt.match(/^¿([\d.]+) es qué % de ([\d.]+)\?$/)
   if (m) return round2((num(m[1]) / num(m[2])) * 100)
-  m = prompt.match(/^([\d,]+) ([+−]) ([\d,]+)%$/)
+  m = prompt.match(/^([\d.]+) ([+−]) ([\d.]+)%$/)
   if (m) return applyChange(num(m[1]), (m[2] === '+' ? 1 : -1) * num(m[3]))
   throw new Error(`unrecognised prompt: ${prompt}`)
 }
@@ -29,7 +29,7 @@ const texts = (p: Problem): Msg[] => [
 
 // Re-derives the answer from the prompt text alone, independently of the generators.
 function solve(text: string): number {
-  const prompt = text.replaceAll(GROUP, '')
+  const prompt = text.replaceAll(',', '')
   let m = prompt.match(/^([\d.]+)% of ([\d.]+)$/)
   if (m) return percentOf(Number(m[1]), Number(m[2]))
   m = prompt.match(/^([\d.]+) is what % of ([\d.]+)\?$/)
@@ -73,8 +73,8 @@ describe.each(LEVELS.map((level, i) => [level.id, level, i] as const))('level %s
         expect(s.from, label).toBeGreaterThanOrEqual(0)
         expect(s.to, label).toBeGreaterThan(s.from)
       }
-      expect(en(b.result), label).toMatch(/[\d.]+%?$/)
-      expect(es(b.result), label).toMatch(/[\d,]+(\s%)?$/)
+      expect(en(b.result), label).toMatch(/[\d.,]+%?$/)
+      expect(es(b.result), label).toMatch(/[\d.,]+%?$/)
     }
   })
 })

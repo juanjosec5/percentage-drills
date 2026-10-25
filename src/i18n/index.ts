@@ -1,6 +1,6 @@
 // Translation without Vue, so the engine can describe its text as messages and the UI (or a
-// test) renders them in either language. Messages hold numbers, not formatted strings: the
-// decimal mark is chosen at render time, and switching language mid-drill re-renders everything.
+// test) renders them in either language. Messages hold numbers, not formatted strings: they are
+// formatted at render time, and switching language mid-drill re-renders everything.
 import { fmt } from '@/engine/math'
 
 import { en } from './en'
@@ -43,7 +43,7 @@ export function msg(key: MessageKey, params?: Params): Msg {
 }
 
 function render(lang: Locale, p: Param, digits?: number): string {
-  if (typeof p === 'number') return fmt(p, lang, digits)
+  if (typeof p === 'number') return fmt(p, digits)
   if (typeof p === 'string') return p
   if (Array.isArray(p)) return p.map((x) => render(lang, x)).join('')
   return translate(lang, p)
