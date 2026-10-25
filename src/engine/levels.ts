@@ -38,7 +38,11 @@ export interface Level {
   strategy?: Msg
   /** Target seconds per problem to count as fast enough for mastery. */
   targetSeconds: number
-  generate: (rng: Rng) => Problem
+  /**
+   * `ramp` is how far into the level the learner is, 0..1: a level can start easy and grow.
+   * Reviews, Mixed and placement leave it at 1, the level's full range.
+   */
+  generate: (rng: Rng, ramp?: number) => Problem
 }
 
 type Piece = { pct: number; sign: 1 | -1; how: Msg }
@@ -136,12 +140,17 @@ const text = (id: Exclude<LevelId, 'mixed'>) => ({
 
 const LADDER: Level[] = [
   {
-    // Big numbers, so moving the decimal point is the whole skill. Half are round (whole
-    // answers), half aren't (one decimal). The id predates the merge with "round numbers".
+    // Moving the decimal point is the whole skill, so the numbers grow as the level goes on:
+    // hundreds first, then thousands, then tens of thousands. Half are round (whole answers),
+    // half aren't (one decimal). The id predates the merge with "round numbers".
     ...text('ten-any'),
     targetSeconds: 7,
-    generate: (rng) =>
-      built(10, rng() < 0.5 ? multiple(rng, 10, 1000, 99_990) : int(rng, 1001, 99_999), [TEN]),
+    generate: (rng, ramp = 1) => {
+      const digits = ramp < 0.3 ? 3 : ramp < 0.7 ? 4 : 5
+      const min = 10 ** (digits - 1)
+      const max = 10 ** digits - 1
+      return built(10, rng() < 0.5 ? multiple(rng, 10, min, max) : int(rng, min + 1, max), [TEN])
+    },
   },
   {
     ...text('five'),
@@ -273,18 +282,20 @@ export const REVIEW_SHARE = 0.3
 
 /**
  * The next problem at a level, plus the index of the level it came from (an earlier one
- * when it's a review problem). Avoids repeating the previous prompt.
+ * when it's a review problem). Avoids repeating the previous prompt. `ramp` (0..1) is the
+ * learner's progress through this level; review problems use the full range.
  */
 export function nextProblem(
   levelIndex: number,
   rng: Rng,
   previous?: Msg,
+  ramp = 1,
 ): { problem: Problem; levelIndex: number } {
   const last = JSON.stringify(previous)
   for (let tries = 0; ; tries++) {
     const review = levelIndex > 0 && rng() < REVIEW_SHARE
     const from = review ? int(rng, 0, levelIndex - 1) : levelIndex
-    const problem = LEVELS[from].generate(rng)
+    const problem = LEVELS[from].generate(rng, review ? 1 : ramp)
     if (JSON.stringify(problem.prompt) !== last || tries > 10) return { problem, levelIndex: from }
   }
 }

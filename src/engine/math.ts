@@ -21,14 +21,15 @@ export function applyChange(base: number, pct: number): number {
 const formatters = new Map<number | undefined, Intl.NumberFormat>()
 
 /**
- * Display a number the way people say it: no trailing zeros (unless `digits` fixes them), a
- * decimal point and comma thousands (15,034 · 1,503.4). The same in every language, by the
- * owner's choice: one notation, as on Colombian price tags.
+ * Display a number the way people say it: no trailing zeros (unless `digits` fixes them) and a
+ * decimal point, the same in every language. No thousands separator: the owner found 60,850
+ * confusing next to an answer typed as plain digits, so what's shown matches what's typed.
  */
 export function fmt(n: number, digits?: number): string {
   let f = formatters.get(digits)
   if (!f) {
     f = new Intl.NumberFormat('en-US', {
+      useGrouping: false,
       minimumFractionDigits: digits ?? 0,
       maximumFractionDigits: digits ?? 2,
     })
@@ -37,7 +38,7 @@ export function fmt(n: number, digits?: number): string {
   return f.format(digits === undefined ? round2(n) : n)
 }
 
-/** Comma thousands, as fmt writes them: 15,034 or 1,503.4. */
+/** Comma thousands, as a learner might still type them: 15,034 or 1,503.4. */
 const THOUSANDS = /^-?\d{1,3}(,\d{3})+(\.\d+)?$/
 
 /**

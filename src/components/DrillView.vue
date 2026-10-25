@@ -13,7 +13,7 @@ import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
 import { isCorrect, parseAnswer } from '@/engine/math'
-import { counts, type Answer } from '@/engine/mastery'
+import { counts, GOAL, type Answer } from '@/engine/mastery'
 import { createRng } from '@/engine/rng'
 import type { Msg } from '@/i18n'
 import { DAILY_COUNT, useProgress, type Mode } from '@/stores/progress'
@@ -83,7 +83,9 @@ const announcement = computed(() => {
 })
 
 function ask() {
-  const next = nextProblem(level.value, rng, problem.value?.prompt)
+  // How far into the level, so its numbers can grow as the learner does.
+  const ramp = Math.min(progress.statusOf(level.value).counted / GOAL, 1)
+  const next = nextProblem(level.value, rng, problem.value?.prompt, ramp)
   problem.value = next.problem
   serial.value++
   problemLevel.value = next.levelIndex

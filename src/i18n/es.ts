@@ -1,5 +1,5 @@
 // Neutral Latin American Spanish, with "tú". "15%" with no space, as in English (owner's call).
-// Numbers look the same as in English (15,034 · 3.5): one notation, as on Colombian price tags.
+// Numbers look the same as in English (15034 · 3.5): a decimal point and no thousands mark.
 import type { Dictionary } from './index'
 
 const plural = (one: string, many: string) => (p: Record<string, unknown>) =>
@@ -87,7 +87,7 @@ export const es: Dictionary = {
   'how.fifth': '÷ 5',
 
   'level.ten-any.title': '10%',
-  'level.ten-any.strategy': '10% de 4,372 = 437.2',
+  'level.ten-any.strategy': '10% de 437 = 43.7',
   'level.five.title': '5%',
   'level.five.strategy': '5% de 70 = la mitad de 7 = 3.5',
   'level.one.title': '1%',
