@@ -22,6 +22,9 @@ async function finishLevel(page: Page) {
 
 test('Enter goes Home straight away', async ({ page }) => {
   await finishLevel(page)
+  // Until Home takes over, the finished level stays on screen, every pip ticked.
+  await expect(page.getByText('Level 3', { exact: true })).toBeVisible()
+  await expect(page.getByRole('img', { name: '10 of 10' })).toBeVisible()
   await page.keyboard.press('Enter')
   // Well before the automatic return (1.6 s).
   await expect(cta(page)).toBeVisible({ timeout: 1000 })

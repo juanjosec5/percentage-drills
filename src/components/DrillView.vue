@@ -104,8 +104,9 @@ function submit() {
   const levelledUp = progress.record(problemLevel.value, { correct: wasCorrect.value, ms })
   dayDone.value = before < DAY_GOAL && progress.today.answered >= DAY_GOAL
   if (levelledUp) {
+    // The level stays on screen with all its ✓ until Home takes over: switching to the next
+    // level here showed its empty pips for a moment.
     finished.value = problemLevel.value
-    level.value = progress.unlocked
     // Back to Home, where the glass pours full and the next level opens: hard to miss, unlike a
     // popup. Enter (Next has focus) goes straight away.
     homeTimer = setTimeout(() => emit('exit'), LEVEL_UP_MS)
@@ -209,7 +210,7 @@ onBeforeUnmount(() => {
       </p>
       <!-- Tracks the level being climbed; review answers don't move it, so it dims for them. -->
       <MasteryMeter
-        v-if="level === progress.unlocked && !progress.allMastered"
+        v-if="(level === progress.unlocked || finished !== null) && !progress.allMastered"
         :level-index="level"
         compact
         class="transition-opacity"
