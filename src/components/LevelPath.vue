@@ -294,6 +294,14 @@ onBeforeUnmount(() => {
             <span v-if="progress.isPlaced(i)" class="text-xs text-ink-muted" aria-hidden="true"
               >↷</span
             >
+            <!-- Spaced review: the ★ stays, a small mark says it's time for another look. -->
+            <span
+              v-if="progress.isDueAt(i)"
+              class="text-xs text-cta"
+              role="img"
+              :aria-label="t('home.due')"
+              >↻</span
+            >
           </button>
 
           <button

@@ -61,6 +61,7 @@ describe('normalize', () => {
         settings: { showTimer: true, offeredPlacement: false },
         placedUpTo: 0,
         challenges: {},
+        spaced: {},
       })
   })
 
@@ -74,6 +75,7 @@ describe('normalize', () => {
       settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,
       challenges: {},
+      spaced: {},
     })
   })
 

@@ -26,6 +26,7 @@ const STORED = {
   current: 'one',
   placedUpTo: 'ten-any',
   challenges: {},
+  spaced: {},
   history: V1.history,
   days: V1.days,
   settings: { showTimer: false, offeredPlacement: false },
@@ -36,6 +37,7 @@ const LOADED = {
   unlocked: 2,
   placedUpTo: 0,
   challenges: {},
+  spaced: {},
   history: V1.history,
   days: V1.days,
   settings: STORED.settings,
@@ -185,6 +187,7 @@ describe('normalize: corrupt entries', () => {
       settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,
       challenges: {},
+      spaced: {},
     })
   })
 
@@ -193,6 +196,20 @@ describe('normalize: corrupt entries', () => {
     expect(normalize({ ...STORED, challenges }).challenges).toEqual({ beginner: 10 })
     expect(normalize({ ...STORED, challenges: { beginner: 6.5 } }).challenges).toEqual({
       beginner: 6,
+    })
+  })
+})
+
+describe('spaced', () => {
+  it('keeps only valid schedules', () => {
+    const spaced = {
+      one: { stage: 2, last: '2026-10-20' },
+      five: { stage: 9, last: '2026-10-20' },
+      tens: { stage: 1, last: 'yesterday' },
+      'ten-any': 'x',
+    }
+    expect(normalize({ ...STORED, spaced }).spaced).toEqual({
+      one: { stage: 2, last: '2026-10-20' },
     })
   })
 })

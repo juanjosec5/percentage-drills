@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // A world's challenge: CHALLENGE_SIZE right answers to problems from across the world, each within
 // twice its level's time, with LIVES to spare. A miss costs a life and brings a follow-up from the
-// same level; the last life ends the run on its score, with the best kept and a retry one tap
-// away. A full run opens the next world. Answers count toward the day like any, and a miss also
-// goes into its level's history, so review aims at it later.
+// same level; the last life ends the run as a failed try, straight back Home, where the best is
+// kept and the retry is one tap away. A full run opens the next world. Answers count toward the
+// day like any, and a miss also goes into its level's history, so review aims at it later.
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import LifeDrops from './LifeDrops.vue'
@@ -41,8 +41,7 @@ const queue = ref<number[]>([])
 const passed = ref<boolean[]>([])
 const problem = ref<Problem>()
 const verdict = ref<Verdict | null>(null)
-const result = ref<'pass' | 'fail' | null>(null)
-const best = computed(() => progress.challenges[WORLDS[props.world].id] ?? 0)
+const result = ref<'pass' | null>(null)
 const isNewLevel = computed(() => progress.statusOf(progress.unlocked).answered === 0)
 const score = computed(() => passed.value.filter(Boolean).length)
 const lives = computed(() => livesLeft(passed.value))
@@ -80,8 +79,10 @@ function submit(input: string) {
   passed.value.push(ok)
   // A miss is the best sign a level is slipping: it joins that level's history (which also
   // logs the day). A pass only logs the day, so challenges can't pad a level's record.
-  if (ok) progress.logDay(answer)
-  else progress.record(queue.value[0], answer)
+  if (ok) {
+    progress.logDay(answer)
+    progress.check(queue.value[0], true)
+  } else progress.record(queue.value[0], answer)
   // Right but too slow costs a life too, so it says why.
   const tooSlow = answer.correct && !ok
   verdict.value = {
@@ -105,8 +106,10 @@ function next() {
     return ask()
   }
   progress.finishChallenge(props.world, score.value)
+  // Out of lives: a failed try, straight back Home, where the card offers the retry and the best.
+  if (outcome === 'fail') return emit('done')
   result.value = outcome
-  if (outcome === 'pass') buzz(BUZZ.cleared)
+  buzz(BUZZ.cleared)
   nextTick(() => mainEl.value?.focus())
 }
 
@@ -155,26 +158,6 @@ onMounted(begin)
       <LifeDrops :left="lives" class="justify-center" />
       <button ref="mainEl" class="btn btn-primary w-full" @click="emit('done')">
         {{ t(isNewLevel ? 'home.start' : 'home.continue', { n: progress.unlocked + 1 }) }}
-      </button>
-    </section>
-
-    <section
-      v-else-if="result === 'fail'"
-      class="card animate-pop space-y-4 text-center"
-      role="status"
-    >
-      <MascotDrop mood="oops" :size="64" class="mx-auto" />
-      <p class="font-mono text-4xl font-bold tabular-nums">
-        {{ t('challenge.score', { n: score, total: CHALLENGE_SIZE }) }}
-      </p>
-      <p class="text-ink-muted">
-        {{ t('challenge.best', { n: best, total: CHALLENGE_SIZE }) }}
-      </p>
-      <button ref="mainEl" class="btn btn-primary w-full" @click="begin">
-        {{ t('challenge.retry') }}
-      </button>
-      <button class="text-sm text-ink-muted underline" @click="emit('done')">
-        {{ t('drill.home') }}
       </button>
     </section>
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // One problem at a time, timed. After a right answer, just the verdict; after a wrong one, the
 // correct answer and a visual breakdown. It keeps going until the level is mastered or you leave:
-// the day's goal (DAY_GOAL answers, for the streak) is a brief toast, never a stop.
+// the day's goal (DAY_GOAL answers, for the streak) is a brief toast, never a stop. When mastered
+// levels are due for spaced review, the session opens with a short warm-up from them.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BreakdownBar from './BreakdownBar.vue'
@@ -14,9 +15,13 @@ import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import { LEVELS, nextProblem, type Problem } from '@/engine/levels'
 import { isCorrect, isPartialAnswer, parseAnswer } from '@/engine/math'
 import { counts, GOAL, type Answer } from '@/engine/mastery'
+import { nearMiss } from '@/engine/nearMiss'
 import { createRng } from '@/engine/rng'
 import type { Msg } from '@/i18n'
 import { DAY_GOAL, useProgress } from '@/stores/progress'
+
+/** Warm-up problems at most, from the levels longest overdue for review. */
+const WARMUP = 3
 
 const props = defineProps<{ startLevel: number }>()
 const emit = defineEmits<{ exit: []; place: [] }>()
@@ -39,6 +44,9 @@ const phase = ref<Phase>('asking')
 const wasCorrect = ref(false)
 /** Set when the problem is asked, so a level-up mid-problem doesn't relabel it as review. */
 const reviewing = ref(false)
+/** The levels still to warm up on, taken at the start of the session. */
+const warmup = progress.dueLevels.filter((i) => i !== props.startLevel).slice(0, WARMUP)
+const warmingUp = ref(false)
 /** The level's tip, on its first problem only: the one moment it helps before answering. */
 const tip = ref<Msg>()
 /** The level just mastered, while its popup is open. */
@@ -71,6 +79,10 @@ const dayDone = ref(false)
 const verdict = computed(() =>
   wasCorrect.value ? t('drill.correct') : t('drill.wrong', { answer: problem.value?.answer ?? 0 }),
 )
+/** What likely went wrong, when the wrong answer has a recognisable cause. */
+const hint = computed(() =>
+  !wasCorrect.value && problem.value ? nearMiss(input.value, problem.value) : null,
+)
 /** Read out by screen readers: focus moves to Next, so the verdict itself is never focused. */
 const announcement = computed(() => {
   if (finished.value !== null)
@@ -82,16 +94,21 @@ const announcement = computed(() => {
 function ask() {
   // How far into the level, so its numbers can grow as the learner does.
   const ramp = Math.min(progress.statusOf(level.value).counted / GOAL, 1)
-  const next = nextProblem(
-    level.value,
-    rng,
-    problem.value?.prompt,
-    ramp,
-    progress.reviewWeights(level.value),
-  )
+  const warm = warmup.shift()
+  const next =
+    warm === undefined
+      ? nextProblem(
+          level.value,
+          rng,
+          problem.value?.prompt,
+          ramp,
+          progress.reviewWeights(level.value),
+        )
+      : { problem: LEVELS[warm].generate(rng), levelIndex: warm }
   problem.value = next.problem
   serial.value++
   problemLevel.value = next.levelIndex
+  warmingUp.value = warm !== undefined
   reviewing.value = next.levelIndex !== level.value
   tip.value =
     !reviewing.value && progress.statusOf(level.value).answered === 0
@@ -238,7 +255,8 @@ onBeforeUnmount(() => {
 
     <p class="sr-only" aria-live="polite">{{ announcement }}</p>
 
-    <div class="flex items-center gap-3">
+    <!-- Wraps on a small phone: the tag drops under the pips instead of running off-screen. -->
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <p class="text-xs font-medium whitespace-nowrap text-ink-muted">
         {{ t('drill.level', { n: level + 1 }) }}
       </p>
@@ -254,7 +272,7 @@ onBeforeUnmount(() => {
       <span
         v-if="reviewing"
         class="shrink-0 rounded-full bg-line px-2 py-0.5 text-xs font-medium text-ink-muted"
-        >{{ t('drill.reviewTag') }}</span
+        >{{ t(warmingUp ? 'drill.warmupTag' : 'drill.reviewTag') }}</span
       >
     </div>
 
@@ -314,6 +332,7 @@ onBeforeUnmount(() => {
               <span aria-hidden="true">{{ wasCorrect ? '✓' : '✗' }}</span> {{ verdict }}
             </p>
           </div>
+          <p v-if="hint" class="text-sm font-semibold text-ink">{{ t(hint) }}</p>
           <p v-if="slow" class="text-sm text-ink-muted">
             {{ t('drill.slow', { s: limitMs / 1000 }) }}
           </p>

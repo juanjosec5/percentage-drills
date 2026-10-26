@@ -6,8 +6,16 @@ import { computed, ref, watch } from 'vue'
 
 import { CHALLENGE_SIZE, hasChallenge } from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
-import { mastery, reviewWeight, type Answer, type MasteryStatus } from '@/engine/mastery'
+import {
+  counts,
+  mastery,
+  MAX_WEIGHT,
+  reviewWeight,
+  type Answer,
+  type MasteryStatus,
+} from '@/engine/mastery'
 import { PLACEMENT_MAX } from '@/engine/placement'
+import { afterAnswer, dueOn, isDue, type Spacing } from '@/engine/spaced'
 import { dayKey, streakOf } from '@/engine/streak'
 import { WORLDS, worldOf } from '@/engine/worlds'
 
@@ -49,6 +57,7 @@ export const useProgress = defineStore('progress', () => {
   const settings = ref(saved.settings)
   const placedUpTo = ref(saved.placedUpTo)
   const challenges = ref<Challenges>(saved.challenges)
+  const spaced = ref<Record<string, Spacing>>(saved.spaced)
   /** Not saved: tells Home the last jump came from placement, so it doesn't celebrate it. */
   const justPlaced = ref(false)
 
@@ -62,11 +71,12 @@ export const useProgress = defineStore('progress', () => {
       settings: settings.value,
       placedUpTo: placedUpTo.value,
       challenges: challenges.value,
+      spaced: spaced.value,
     })
   }
 
   watch(
-    [unlocked, history, days, settings, placedUpTo, challenges],
+    [unlocked, history, days, settings, placedUpTo, challenges, spaced],
     () => {
       try {
         localStorage.setItem(KEY, JSON.stringify(snapshot()))
@@ -97,10 +107,48 @@ export const useProgress = defineStore('progress', () => {
     return mastery(level, history.value[level.id] ?? [])
   }
 
-  /** How often each level before `index` comes up in review: shaky ones more (see reviewWeight). */
+  /**
+   * How often each level before `index` comes up in review: shaky ones more (see reviewWeight),
+   * and a level due for spaced review as often as the shakiest.
+   */
   function reviewWeights(index: number): number[] {
-    return LEVELS.slice(0, index).map((level) => reviewWeight(level, history.value[level.id] ?? []))
+    return LEVELS.slice(0, index).map((level, i) =>
+      isDueAt(i) ? MAX_WEIGHT : reviewWeight(level, history.value[level.id] ?? []),
+    )
   }
+
+  /** A mastered level whose spaced review has come due. */
+  function isDueAt(index: number): boolean {
+    const s = spaced.value[LEVELS[index].id]
+    return !!s && isDue(s)
+  }
+
+  /** Every level due for review, longest overdue first. */
+  const dueLevels = computed(() =>
+    LEVELS.map((_, i) => i)
+      .filter(isDueAt)
+      .sort((a, b) =>
+        dueOn(spaced.value[LEVELS[a].id]).localeCompare(dueOn(spaced.value[LEVELS[b].id])),
+      ),
+  )
+
+  /** An answer at a mastered level moves its spaced review (see afterAnswer). */
+  function check(levelIndex: number, counted: boolean) {
+    const id = LEVELS[levelIndex].id
+    const s = spaced.value[id]
+    if (s) spaced.value[id] = afterAnswer(s, counted)
+  }
+
+  // Every level behind the frontier is on the schedule; one without a record (an older save, or
+  // skipped by placement) starts from today, so it first comes due tomorrow.
+  watch(
+    unlocked,
+    (frontier) => {
+      for (const level of LEVELS.slice(0, frontier))
+        spaced.value[level.id] ??= { stage: 0, last: dayKey() }
+    },
+    { immediate: true },
+  )
 
   const passed = (world: number) => (challenges.value[WORLDS[world].id] ?? 0) >= CHALLENGE_SIZE
 
@@ -169,6 +217,7 @@ export const useProgress = defineStore('progress', () => {
     const wasMastered = statusOf(levelIndex).mastered
     history.value[id] = [...(history.value[id] ?? []), answer].slice(-HISTORY_CAP)
     logDay(answer)
+    check(levelIndex, counts(LEVELS[levelIndex], answer))
 
     // Only a right answer can finish a level: celebrating straight after "Not quite" feels wrong.
     const atFrontier = levelIndex === unlocked.value && levelIndex < LEVELS.length - 1
@@ -176,6 +225,8 @@ export const useProgress = defineStore('progress', () => {
     // A world's last level opens its challenge (see gate) rather than the next level: only the
     // answer that finished it counts as finishing, not more practice there while the gate is up.
     const w = worldOf(levelIndex)
+    // Mastered just now: its spaced review starts today.
+    if (!wasMastered) spaced.value[id] = { stage: 0, last: dayKey() }
     if (hasChallenge(w) && levelIndex === WORLDS[w].to && !passed(w)) return !wasMastered
     unlocked.value++
     return true
@@ -211,6 +262,7 @@ export const useProgress = defineStore('progress', () => {
     days.value = {}
     placedUpTo.value = 0
     challenges.value = {}
+    spaced.value = {}
   }
 
   /** Replaces progress with an imported save; settings stay, as they do on reset. */
@@ -220,6 +272,7 @@ export const useProgress = defineStore('progress', () => {
     days.value = saved.days
     placedUpTo.value = saved.placedUpTo
     challenges.value = saved.challenges
+    spaced.value = saved.spaced
   }
 
   return {
@@ -236,6 +289,10 @@ export const useProgress = defineStore('progress', () => {
     finishChallenge,
     reviewWeights,
     logDay,
+    spaced,
+    isDueAt,
+    dueLevels,
+    check,
     canPlace,
     isPlaced,
     place,

@@ -58,7 +58,7 @@ test('ten in a row opens the next world', async ({ page }) => {
   expect((await stored(page)).challenges).toEqual({ beginner: 10 })
 })
 
-test('a miss costs a drop and brings a follow-up; the third ends the run, keeping the best', async ({
+test('a miss costs a drop and brings a follow-up; the third sends the run Home, keeping the best', async ({
   page,
 }) => {
   await open(page, AT_GATE)
@@ -83,16 +83,8 @@ test('a miss costs a drop and brings a follow-up; the third ends the run, keepin
     await answer(page, false)
     await page.getByRole('button', { name: /^Next/ }).press('Enter')
   }
-  const result = page.getByRole('status')
-  await expect(result).toContainText('3/10')
-  await expect(result).toContainText('Best 3/10')
-  const retry = page.getByRole('button', { name: 'Try again' })
-  await expect(retry).toBeFocused()
-  await retry.press('Enter')
-  await expect(input(page)).toBeFocused()
-  await expect(page.getByRole('img', { name: '3 lives left' })).toBeVisible()
-  await page.getByRole('button', { name: 'Back' }).click()
-
+  // Out of lives: a failed try, straight back Home, with the retry and the best on the card.
+  await expect(challengeCta(page)).toBeFocused()
   await expect(challengeCta(page)).toContainText('Try again')
   await expect(challengeCta(page)).toContainText('Best 3/10')
   expect((await stored(page)).challenges).toEqual({ beginner: 3 })
