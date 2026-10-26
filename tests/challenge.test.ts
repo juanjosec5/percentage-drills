@@ -1,4 +1,11 @@
-import { CHALLENGE_SIZE, challengeLevels, challengeResult, hasChallenge } from '@/engine/challenge'
+import {
+  CHALLENGE_SIZE,
+  challengeLevels,
+  challengeResult,
+  hasChallenge,
+  LIVES,
+  livesLeft,
+} from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
 import { MAX_WEIGHT, reviewWeight } from '@/engine/mastery'
 import { createRng, weighted } from '@/engine/rng'
@@ -23,11 +30,19 @@ describe('challenges', () => {
     }
   })
 
-  it('end on the first miss and pass only on a full run', () => {
+  it('pass at CHALLENGE_SIZE right, with up to LIVES - 1 misses on the way', () => {
     expect(challengeResult([])).toBeNull()
     expect(challengeResult(Array(9).fill(true))).toBeNull()
-    expect(challengeResult([true, true, false])).toBe('fail')
-    expect(challengeResult(Array(CHALLENGE_SIZE).fill(true))).toBe('pass')
+    expect(challengeResult([true, false, true, false])).toBeNull()
+    expect(livesLeft([true, false, true, false])).toBe(1)
+    const twoSlips = [false, ...Array(5).fill(true), false, ...Array(5).fill(true)]
+    expect(twoSlips).toHaveLength(CHALLENGE_SIZE + LIVES - 1)
+    expect(challengeResult(twoSlips)).toBe('pass')
+  })
+
+  it('end when the lives run out', () => {
+    expect(challengeResult([true, false, false, true, false])).toBe('fail')
+    expect(challengeResult(Array(LIVES).fill(false))).toBe('fail')
   })
 })
 

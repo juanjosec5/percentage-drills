@@ -6,8 +6,8 @@ export interface Verdict {
   correct: boolean
   /** Shown under the verdict when time mattered, e.g. "⏱ over 16s". */
   time?: string
-  /** Wait for Next even though it's right (a slow answer that ended a run). Wrong always waits. */
-  wait?: boolean
+  /** Right but past the limit, so it didn't count: a neutral verdict that waits for Next. */
+  slow?: boolean
 }
 </script>
 
@@ -26,11 +26,13 @@ const props = defineProps<{
   problem: Problem
   /** Null while asking. */
   verdict: Verdict | null
+  /** The time limit, shown under the prompt while asking (e.g. "/ 16s"). */
+  limit?: string
 }>()
 const emit = defineEmits<{ answer: [input: string]; next: [] }>()
 const { t } = useI18n()
 
-const waits = (v: Verdict) => !v.correct || !!v.wait
+const waits = (v: Verdict) => !v.correct || !!v.slow
 const input = ref('')
 const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
@@ -57,7 +59,12 @@ watch(
 
 <template>
   <section class="card space-y-5 text-center">
-    <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
+    <div>
+      <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
+      <p v-if="limit" class="mt-1 font-mono text-sm text-ink-muted tabular-nums">
+        <span aria-hidden="true">⏱ </span>{{ limit }}
+      </p>
+    </div>
     <form v-if="!verdict" class="flex gap-2" @submit.prevent="submit">
       <input
         ref="inputEl"
@@ -74,8 +81,16 @@ watch(
     <template v-else>
       <div class="animate-pop space-y-1" role="status">
         <div class="flex items-center justify-center gap-2">
-          <MascotDrop :mood="verdict.correct ? 'happy' : 'oops'" :size="30" />
-          <p class="text-xl font-semibold" :class="verdict.correct ? 'text-correct' : 'text-wrong'">
+          <MascotDrop
+            :mood="verdict.slow ? 'idle' : verdict.correct ? 'happy' : 'oops'"
+            :size="30"
+          />
+          <p
+            class="text-xl font-semibold"
+            :class="
+              verdict.slow ? 'text-ink-muted' : verdict.correct ? 'text-correct' : 'text-wrong'
+            "
+          >
             <span aria-hidden="true">{{ verdict.correct ? '✓' : '✗' }}</span>
             {{
               verdict.correct ? t('drill.correct') : t('drill.wrong', { answer: problem.answer })
