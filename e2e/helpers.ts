@@ -3,7 +3,11 @@ import { expect, type Page } from '@playwright/test'
 
 export const KEY = 'percent-drills:v1'
 export const LANG_KEY = 'percent-drills:lang'
-/** Stamped on every seed, so seeds use today's level indexes instead of being migrated. */
+/**
+ * Stamped on every seed: seeds are v4 saves, levels by today's index, and load through the
+ * v4 → v5 step like a real older save (which also passes the challenge of every world behind
+ * `unlocked`). What the app writes back is v5: levels by id.
+ */
 export const SAVE_VERSION = 4
 
 /**

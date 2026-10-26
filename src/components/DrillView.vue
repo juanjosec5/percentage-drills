@@ -82,7 +82,13 @@ const announcement = computed(() => {
 function ask() {
   // How far into the level, so its numbers can grow as the learner does.
   const ramp = Math.min(progress.statusOf(level.value).counted / GOAL, 1)
-  const next = nextProblem(level.value, rng, problem.value?.prompt, ramp)
+  const next = nextProblem(
+    level.value,
+    rng,
+    problem.value?.prompt,
+    ramp,
+    progress.reviewWeights(level.value),
+  )
   problem.value = next.problem
   serial.value++
   problemLevel.value = next.levelIndex

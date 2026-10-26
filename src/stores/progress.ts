@@ -1,14 +1,27 @@
 // Everything the learner has done, saved in localStorage: answers per level (for mastery),
-// per-day totals (for the day's goal and the streak) and the highest unlocked level.
+// per-day totals (for the day's goal and the streak), the highest unlocked level and the world
+// challenges' best scores.
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
+import { CHALLENGE_SIZE, hasChallenge } from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
-import { mastery, type Answer, type MasteryStatus } from '@/engine/mastery'
+import { mastery, reviewWeight, type Answer, type MasteryStatus } from '@/engine/mastery'
 import { PLACEMENT_MAX } from '@/engine/placement'
 import { dayKey, streakOf } from '@/engine/streak'
+import { WORLDS, worldOf } from '@/engine/worlds'
 
-import { HISTORY_CAP, KEY, normalize, SAVE_VERSION, type Day, type Saved } from './save'
+import {
+  HISTORY_CAP,
+  KEY,
+  normalize,
+  SAVE_VERSION,
+  serialize,
+  type Challenges,
+  type Day,
+  type Saved,
+  type Stored,
+} from './save'
 
 /** Answers that make a day count toward the streak: the day's goal. */
 export const DAY_GOAL = 10
@@ -35,22 +48,25 @@ export const useProgress = defineStore('progress', () => {
   const days = ref(saved.days)
   const settings = ref(saved.settings)
   const placedUpTo = ref(saved.placedUpTo)
+  const challenges = ref<Challenges>(saved.challenges)
   /** Not saved: tells Home the last jump came from placement, so it doesn't celebrate it. */
   const justPlaced = ref(false)
 
-  function snapshot(): Saved {
-    return {
+  /** Progress in its stored form (levels by id): what's saved, and what Export writes. */
+  function snapshot(): Stored {
+    return serialize({
       version: SAVE_VERSION,
       unlocked: unlocked.value,
       history: history.value,
       days: days.value,
       settings: settings.value,
       placedUpTo: placedUpTo.value,
-    }
+      challenges: challenges.value,
+    })
   }
 
   watch(
-    [unlocked, history, days, settings, placedUpTo],
+    [unlocked, history, days, settings, placedUpTo, challenges],
     () => {
       try {
         localStorage.setItem(KEY, JSON.stringify(snapshot()))
@@ -81,6 +97,40 @@ export const useProgress = defineStore('progress', () => {
     return mastery(level, history.value[level.id] ?? [])
   }
 
+  /** How often each level before `index` comes up in review: shaky ones more (see reviewWeight). */
+  function reviewWeights(index: number): number[] {
+    return LEVELS.slice(0, index).map((level) => reviewWeight(level, history.value[level.id] ?? []))
+  }
+
+  const passed = (world: number) => (challenges.value[WORLDS[world].id] ?? 0) >= CHALLENGE_SIZE
+
+  /**
+   * The world whose challenge stands between the learner and the next world: its last level is
+   * mastered and the challenge isn't passed yet. Null while a level is the way forward.
+   */
+  const gate = computed(() => {
+    const w = worldOf(unlocked.value)
+    const open =
+      hasChallenge(w) &&
+      unlocked.value === WORLDS[w].to &&
+      statusOf(unlocked.value).mastered &&
+      !passed(w)
+    return open ? w : null
+  })
+
+  /**
+   * Where the learner stands on the path, as one number that only grows: a level's index, or
+   * half a step past a world's last level while its challenge is the way forward.
+   */
+  const step = computed(() => unlocked.value + (gate.value === null ? 0 : 0.5))
+
+  /** Records a challenge run's score; a full one opens the next world. */
+  function finishChallenge(world: number, score: number) {
+    const id = WORLDS[world].id
+    challenges.value[id] = Math.max(challenges.value[id] ?? 0, score)
+    if (passed(world) && unlocked.value <= WORLDS[world].to) unlocked.value = WORLDS[world + 1].from
+  }
+
   // Placement only ever moves the learner up and writes no answers, so it stays on offer for as
   // long as it could still open a higher level.
   const canPlace = computed(() => unlocked.value < PLACEMENT_MAX)
@@ -97,6 +147,9 @@ export const useProgress = defineStore('progress', () => {
     if (start <= unlocked.value) return
     unlocked.value = start
     placedUpTo.value = start
+    // Placement's check for a world stands in for that world's challenge.
+    for (const [w, world] of WORLDS.entries())
+      if (hasChallenge(w) && world.to < start) challenges.value[world.id] = CHALLENGE_SIZE
     justPlaced.value = true
   }
 
@@ -107,17 +160,35 @@ export const useProgress = defineStore('progress', () => {
 
   let persistAsked = false
 
-  /** Records one answer. Returns true when it unlocked the next level. */
+  /**
+   * Records one answer. Returns true when it finished the current level, which opens the next
+   * level or, at the end of a world, its challenge.
+   */
   function record(levelIndex: number, answer: Answer): boolean {
+    const id = LEVELS[levelIndex].id
+    const wasMastered = statusOf(levelIndex).mastered
+    history.value[id] = [...(history.value[id] ?? []), answer].slice(-HISTORY_CAP)
+    logDay(answer)
+
+    // Only a right answer can finish a level: celebrating straight after "Not quite" feels wrong.
+    const atFrontier = levelIndex === unlocked.value && levelIndex < LEVELS.length - 1
+    if (!atFrontier || !answer.correct || !statusOf(levelIndex).mastered) return false
+    // A world's last level opens its challenge (see gate) rather than the next level: only the
+    // answer that finished it counts as finishing, not more practice there while the gate is up.
+    const w = worldOf(levelIndex)
+    if (hasChallenge(w) && levelIndex === WORLDS[w].to && !passed(w)) return !wasMastered
+    unlocked.value++
+    return true
+  }
+
+  /** Adds an answer to today's totals: every answer counts toward the day's goal and the streak. */
+  function logDay(answer: Answer) {
     // Asks the browser not to evict the save under storage pressure. Once there is something
     // worth keeping, not on load: some browsers weigh engagement when they decide.
     if (!persistAsked) {
       persistAsked = true
       navigator.storage?.persist?.().catch(() => {})
     }
-    const id = LEVELS[levelIndex].id
-    history.value[id] = [...(history.value[id] ?? []), answer].slice(-HISTORY_CAP)
-
     const key = dayKey()
     const day = { ...today.value }
     day.answered++
@@ -127,14 +198,6 @@ export const useProgress = defineStore('progress', () => {
       day.bestMs = day.bestMs === null ? answer.ms : Math.min(day.bestMs, answer.ms)
     }
     days.value[key] = day
-
-    // Only a right answer can finish a level: celebrating straight after "Not quite" feels wrong.
-    const atFrontier = levelIndex === unlocked.value && levelIndex < LEVELS.length - 1
-    if (atFrontier && answer.correct && statusOf(levelIndex).mastered) {
-      unlocked.value++
-      return true
-    }
-    return false
   }
 
   function setShowTimer(show: boolean) {
@@ -147,6 +210,7 @@ export const useProgress = defineStore('progress', () => {
     history.value = {}
     days.value = {}
     placedUpTo.value = 0
+    challenges.value = {}
   }
 
   /** Replaces progress with an imported save; settings stay, as they do on reset. */
@@ -155,6 +219,7 @@ export const useProgress = defineStore('progress', () => {
     history.value = saved.history
     days.value = saved.days
     placedUpTo.value = saved.placedUpTo
+    challenges.value = saved.challenges
   }
 
   return {
@@ -163,7 +228,14 @@ export const useProgress = defineStore('progress', () => {
     days,
     settings,
     placedUpTo,
+    challenges,
     justPlaced,
+    gate,
+    step,
+    passed,
+    finishChallenge,
+    reviewWeights,
+    logDay,
     canPlace,
     isPlaced,
     place,

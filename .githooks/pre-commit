@@ -1,0 +1,8 @@
+#!/bin/sh
+# The fast checks, before every commit: a failure here never reaches CI. CI still runs these
+# plus the build and the browser tests. Skip once with `git commit --no-verify`.
+set -e
+echo "pre-commit: type-check, lint, unit tests"
+npx vue-tsc -b
+npm run lint --silent
+npm test --silent

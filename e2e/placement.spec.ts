@@ -69,8 +69,10 @@ test('passing Beginner and missing Intermediate starts the learner at Intermedia
   await expect(skip(page)).toBeVisible()
 
   const saved = await stored(page)
-  expect(saved.unlocked).toBe(4)
-  expect(saved.placedUpTo).toBe(4)
+  expect(saved.current).toBe('fractions')
+  expect(saved.placedUpTo).toBe('fractions')
+  // Passing Beginner's check counts as passing its challenge.
+  expect(saved.challenges).toEqual({ beginner: 10 })
   expect(saved.history).toEqual({})
   expect(Object.keys(saved.days)).toHaveLength(0)
 })
@@ -95,7 +97,7 @@ test('two misses end it on a result screen that changes nothing', async ({ page 
   await page.getByRole('button', { name: 'Start level 1' }).click()
   await expect(cta(page)).toContainText('Start level 1')
   // Nothing was placed, so nothing was written.
-  expect((await stored(page))?.unlocked ?? 0).toBe(0)
+  expect((await stored(page))?.current ?? 'ten-any').toBe('ten-any')
 })
 
 test('a right but very slow answer shows its time and still ends on the result screen', async ({

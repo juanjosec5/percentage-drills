@@ -1,10 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 
+import { CHALLENGE_SIZE } from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
 import { GOAL } from '@/engine/mastery'
 import { PLACEMENT_MAX } from '@/engine/placement'
 import { CONFIRM, DAY_GOAL, normalize, useProgress } from '@/stores/progress'
+import { WORLDS } from '@/engine/worlds'
 import { SAVE_VERSION } from '@/stores/save'
 
 const fast = (correct: boolean) => ({ correct, ms: 1000 })
@@ -58,6 +60,7 @@ describe('normalize', () => {
         days: {},
         settings: { showTimer: true, offeredPlacement: false },
         placedUpTo: 0,
+        challenges: {},
       })
   })
 
@@ -70,6 +73,7 @@ describe('normalize', () => {
       version: SAVE_VERSION,
       settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,
+      challenges: {},
     })
   })
 
@@ -146,7 +150,7 @@ describe('progress.restore', () => {
       placedUpTo: 0,
     })
     progress.restore(backup)
-    expect(progress.snapshot()).toEqual({
+    expect(normalize(progress.snapshot())).toEqual({
       ...backup,
       settings: { showTimer: false, offeredPlacement: false },
     })
@@ -205,5 +209,70 @@ describe('placement', () => {
     progress.reset()
     expect(progress.placedUpTo).toBe(0)
     expect(progress.canPlace).toBe(true)
+  })
+})
+
+describe('world challenges', () => {
+  const finishLevel = (progress: ReturnType<typeof useProgress>, i: number) => {
+    let finished = false
+    for (let k = 0; k < GOAL; k++) finished = progress.record(i, fast(true))
+    return finished
+  }
+  const beginnerLast = WORLDS[0].to
+
+  it("a world's last level opens its challenge, not the next level", () => {
+    const progress = useProgress()
+    progress.unlocked = beginnerLast
+    expect(progress.step).toBe(beginnerLast)
+    expect(finishLevel(progress, beginnerLast)).toBe(true)
+    expect(progress.unlocked).toBe(beginnerLast)
+    expect(progress.gate).toBe(0)
+    expect(progress.step).toBe(beginnerLast + 0.5)
+    // More practice there doesn't finish it again.
+    expect(progress.record(beginnerLast, fast(true))).toBe(false)
+  })
+
+  it('a full run opens the next world; a short one keeps its best and the gate', () => {
+    const progress = useProgress()
+    progress.unlocked = beginnerLast
+    finishLevel(progress, beginnerLast)
+    progress.finishChallenge(0, 7)
+    progress.finishChallenge(0, 4)
+    expect(progress.challenges.beginner).toBe(7)
+    expect(progress.gate).toBe(0)
+    progress.finishChallenge(0, CHALLENGE_SIZE)
+    expect(progress.gate).toBeNull()
+    expect(progress.unlocked).toBe(WORLDS[1].from)
+  })
+
+  it('replaying a passed challenge moves nothing', () => {
+    const progress = useProgress()
+    progress.unlocked = 6
+    progress.challenges.beginner = CHALLENGE_SIZE
+    progress.finishChallenge(0, 3)
+    expect(progress.unlocked).toBe(6)
+    expect(progress.challenges.beginner).toBe(CHALLENGE_SIZE)
+  })
+
+  it('placement past a world counts as passing its challenge', () => {
+    const progress = useProgress()
+    progress.place(WORLDS[1].from)
+    expect(progress.passed(0)).toBe(true)
+    expect(progress.passed(1)).toBe(false)
+  })
+
+  it('the last world has no challenge: Mixed is its finale', () => {
+    const progress = useProgress()
+    const last = LEVELS.length - 1
+    progress.unlocked = last
+    finishLevel(progress, last)
+    expect(progress.gate).toBeNull()
+    expect(progress.allMastered).toBe(true)
+  })
+
+  it('aims reviews at levels with recent misses', () => {
+    const progress = useProgress()
+    progress.history.five = [fast(false), fast(false)]
+    expect(progress.reviewWeights(3)).toEqual([1, 3, 1])
   })
 })

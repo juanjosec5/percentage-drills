@@ -5,11 +5,12 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import MascotDrop from './MascotDrop.vue'
+import QuizCard, { RIGHT_MS, type Verdict } from './QuizCard.vue'
 import { BUZZ, useHaptics } from '@/composables/useHaptics'
 import { useI18n } from '@/composables/useI18n'
 import { seconds, useStopwatch } from '@/composables/useStopwatch'
 import type { Problem } from '@/engine/levels'
-import { isCorrect, parseAnswer } from '@/engine/math'
+import { isCorrect } from '@/engine/math'
 import { CHECK_SIZE, CHECKS, checkResult, levelAt, passes, placeFrom } from '@/engine/placement'
 import { createRng } from '@/engine/rng'
 import { WORLDS, worldOf } from '@/engine/worlds'
@@ -22,8 +23,7 @@ const progress = useProgress()
 const rng = createRng()
 const clock = useStopwatch()
 
-/** How long a right answer's verdict and a passed world stay up before moving on. */
-const RIGHT_MS = 900
+/** How long a passed world stays up before moving on. */
 const CLEARED_MS = 1200
 
 type Phase = 'asking' | 'verdict' | 'cleared' | 'result'
@@ -31,15 +31,11 @@ const phase = ref<Phase>('asking')
 const check = ref(0)
 const results = ref<boolean[][]>([[]])
 const problem = ref<Problem>()
-const input = ref('')
-const last = ref({ correct: false, ms: 0, slow: false })
+const verdict = ref<Verdict | null>(null)
 /** Whether placement moved the learner up; the result screen says so either way. */
 const moved = ref(false)
 
-const inputEl = ref<HTMLInputElement>()
-const nextEl = ref<HTMLButtonElement>()
 const startEl = ref<HTMLButtonElement>()
-const canSubmit = computed(() => parseAnswer(input.value) !== null)
 const passed = computed(() => results.value[check.value])
 const question = computed(() => passed.value.length)
 const step = computed(() => check.value * CHECK_SIZE + Math.min(question.value + 1, CHECK_SIZE))
@@ -54,23 +50,23 @@ onUnmounted(() => clearTimeout(timer))
 
 function ask() {
   problem.value = levelAt(check.value, question.value).generate(rng)
-  input.value = ''
+  verdict.value = null
   phase.value = 'asking'
   clock.start()
-  nextTick(() => inputEl.value?.focus())
 }
 
-function submit() {
-  if (phase.value !== 'asking' || !problem.value || !canSubmit.value) return
+function submit(input: string) {
+  if (phase.value !== 'asking' || !problem.value) return
   const level = levelAt(check.value, question.value)
-  const answer = { correct: isCorrect(input.value, problem.value.answer), ms: clock.stop() }
-  last.value = { ...answer, slow: answer.correct && answer.ms > level.targetSeconds * 1000 }
+  const answer = { correct: isCorrect(input, problem.value.answer), ms: clock.stop() }
+  const slow = answer.correct && answer.ms > level.targetSeconds * 1000
+  verdict.value = { correct: answer.correct, time: slow ? `⏱ ${t(seconds(answer.ms))}` : undefined }
   passed.value.push(passes(level, answer))
   phase.value = 'verdict'
   if (answer.correct) {
     buzz(BUZZ.right)
     after(RIGHT_MS, next)
-  } else nextTick(() => nextEl.value?.focus())
+  }
 }
 
 function next() {
@@ -159,43 +155,12 @@ onMounted(ask)
       </button>
     </section>
 
-    <section v-else-if="problem" class="card space-y-5 text-center">
-      <p class="font-mono text-4xl font-semibold sm:text-5xl">{{ t(problem.prompt) }}</p>
-      <form v-if="phase === 'asking'" class="flex gap-2" @submit.prevent="submit">
-        <input
-          ref="inputEl"
-          v-model="input"
-          inputmode="decimal"
-          autocomplete="off"
-          enterkeyhint="done"
-          :placeholder="t('drill.answer')"
-          :aria-label="t('drill.answer')"
-          class="well min-w-0 flex-1 rounded-lg border-ink-muted/80 px-4 py-3 text-center font-mono text-2xl outline-none focus:border-ink"
-        />
-        <button class="btn btn-primary" :disabled="!canSubmit">{{ t('drill.check') }}</button>
-      </form>
-      <template v-else>
-        <div class="animate-pop space-y-1" role="status">
-          <div class="flex items-center justify-center gap-2">
-            <MascotDrop :key="step" :mood="last.correct ? 'happy' : 'oops'" :size="30" />
-            <p class="text-xl font-semibold" :class="last.correct ? 'text-correct' : 'text-wrong'">
-              <span aria-hidden="true">{{ last.correct ? '✓' : '✗' }}</span>
-              {{ last.correct ? t('drill.correct') : t('drill.wrong', { answer: problem.answer }) }}
-            </p>
-          </div>
-          <p v-if="last.slow" class="font-mono text-ink-muted tabular-nums">
-            <span aria-hidden="true">⏱ </span>{{ t(seconds(last.ms)) }}
-          </p>
-          <p v-if="!last.correct" class="font-mono text-ink-muted">
-            <s aria-hidden="true">{{ input }}</s>
-            <span class="sr-only">{{ t('drill.youAnswered', { input }) }}</span>
-          </p>
-        </div>
-        <button v-if="!last.correct" ref="nextEl" class="btn btn-primary w-full" @click="next">
-          {{ t('drill.next') }}
-          <span class="ml-1" aria-hidden="true">⏎</span>
-        </button>
-      </template>
-    </section>
+    <QuizCard
+      v-else-if="problem"
+      :problem="problem"
+      :verdict="verdict"
+      @answer="submit"
+      @next="next"
+    />
   </div>
 </template>
