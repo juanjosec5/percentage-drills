@@ -15,10 +15,12 @@ pips in the drill, a 🔥 ring for the day.
   the clock). Wrong or slow answers don't count, and nothing is ever taken back. About 30% of
   problems review earlier levels, tagged "↺ review, not counted"; levels with recent misses come
   up in review more often.
-- **World challenges:** Beginner and Intermediate end in a checkpoint flag. Finishing a world's
-  last level opens its challenge: 10 problems from the whole world, all right and within twice
-  the time, in a row. The first miss ends the run; the best score is kept and a retry costs
-  nothing. Passing opens the next world. Advanced ends in Mixed instead.
+- **World challenges:** Beginner and Intermediate end in a checkpoint flag (Challenge 1, 2).
+  Finishing a world's last level opens its challenge: 10 right answers to problems from the whole
+  world, each within twice the time, with 3 lives. A miss (wrong or too slow) costs a life,
+  brings another problem from the same level, and goes into that level's history for review; the
+  third ends the run. The best score is kept and a retry costs nothing. Passing opens the next
+  world. Advanced ends in Mixed instead.
 - **Find my level:** an optional 3-question check per world. Passing one starts you in the next
   world and counts as passing that world's challenge.
 - **Streak:** any 10 answers in a day keep it going (the ring on the 🔥 chip). One missed day a

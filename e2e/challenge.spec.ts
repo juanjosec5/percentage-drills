@@ -32,7 +32,7 @@ test("a world's last level mastered: the checkpoint is the current stop, the nex
 }) => {
   await open(page, AT_GATE)
   await expect(cta(page)).toHaveCount(0)
-  await expect(challengeCta(page)).toContainText('Beginner challenge · 10 in a row')
+  await expect(challengeCta(page)).toContainText('Challenge 1 · 10 right · 3 lives')
   await expect(challengeCta(page)).toContainText('Start challenge')
   await expect(challengeCta(page)).toBeFocused()
   await expect(levels(page).locator('li.row.gate.current')).toHaveCount(1)
@@ -44,7 +44,8 @@ test("a world's last level mastered: the checkpoint is the current stop, the nex
 test('ten in a row opens the next world', async ({ page }) => {
   await open(page, AT_GATE)
   await challengeCta(page).click()
-  await expect(page.getByText('Beginner challenge')).toBeVisible()
+  await expect(page.getByText('Challenge 1')).toBeVisible()
+  await expect(page.getByRole('img', { name: '3 lives left' })).toBeVisible()
   for (let i = 0; i < 10; i++) await answer(page, true)
   await expect(page.getByRole('status')).toContainText('→ Intermediate')
   await page.getByRole('button', { name: 'Start level 5' }).click()
@@ -57,15 +58,31 @@ test('ten in a row opens the next world', async ({ page }) => {
   expect((await stored(page)).challenges).toEqual({ beginner: 10 })
 })
 
-test('the first miss ends the run; the best stays and a retry is one tap away', async ({
+test('a miss costs a drop and brings a follow-up; the third ends the run, keeping the best', async ({
   page,
 }) => {
   await open(page, AT_GATE)
   await challengeCta(page).click()
   for (let i = 0; i < 3; i++) await answer(page, true)
+  await expect(page.getByRole('img', { name: '3 of 10' })).toBeVisible()
+
   await answer(page, false)
   await page.getByRole('button', { name: /^Next/ }).press('Enter')
+  // The run goes on, one drop down, and the pips never go backwards.
+  await expect(page.getByRole('img', { name: '2 lives left' })).toBeVisible()
+  await expect(page.getByRole('img', { name: '3 of 10' })).toBeVisible()
+  // The miss went into that level's history, so review aims at it later.
+  const history = (await stored(page)).history as Record<string, { correct: boolean }[]>
+  expect(
+    Object.values(history)
+      .flat()
+      .filter((a) => !a.correct),
+  ).toHaveLength(1)
 
+  for (let i = 0; i < 2; i++) {
+    await answer(page, false)
+    await page.getByRole('button', { name: /^Next/ }).press('Enter')
+  }
   const result = page.getByRole('status')
   await expect(result).toContainText('3/10')
   await expect(result).toContainText('Best 3/10')
@@ -73,6 +90,7 @@ test('the first miss ends the run; the best stays and a retry is one tap away', 
   await expect(retry).toBeFocused()
   await retry.press('Enter')
   await expect(input(page)).toBeFocused()
+  await expect(page.getByRole('img', { name: '3 lives left' })).toBeVisible()
   await page.getByRole('button', { name: 'Back' }).click()
 
   await expect(challengeCta(page)).toContainText('Try again')
@@ -80,7 +98,19 @@ test('the first miss ends the run; the best stays and a retry is one tap away', 
   expect((await stored(page)).challenges).toEqual({ beginner: 3 })
 })
 
-test('right but past twice the time ends the run too, and says why', async ({ page }) => {
+test('two slips still pass', async ({ page }) => {
+  await open(page, AT_GATE)
+  await challengeCta(page).click()
+  for (let i = 0; i < 12; i++) {
+    const slip = i === 2 || i === 7
+    await answer(page, !slip)
+    if (slip) await page.getByRole('button', { name: /^Next/ }).press('Enter')
+  }
+  await expect(page.getByRole('status')).toContainText('→ Intermediate')
+  await expect(page.getByRole('img', { name: '1 life left' })).toBeVisible()
+})
+
+test('right but past twice the time costs a drop too, and says why', async ({ page }) => {
   await page.clock.install({ time: NOW })
   await open(page, AT_GATE)
   await challengeCta(page).click()
@@ -91,7 +121,8 @@ test('right but past twice the time ends the run too, and says why', async ({ pa
   await expect(verdictEl(page)).toContainText('✓ Correct')
   await expect(page.getByText(/^⏱ over \d+s$/)).toBeVisible()
   await page.getByRole('button', { name: /^Next/ }).click()
-  await expect(page.getByRole('status')).toContainText('0/10')
+  await expect(page.getByRole('img', { name: '2 lives left' })).toBeVisible()
+  await expect(page.getByRole('img', { name: '0 of 10' })).toBeVisible()
 })
 
 test.describe('with motion', () => {
