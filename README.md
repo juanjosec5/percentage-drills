@@ -19,8 +19,12 @@ pips in the drill, a 🔥 ring for the day.
   Finishing a world's last level opens its challenge: 10 right answers to problems from the whole
   world, each within twice the time, with 3 lives. A miss (wrong or too slow) costs a life,
   brings another problem from the same level, and goes into that level's history for review; the
-  third ends the run. The best score is kept and a retry costs nothing. Passing opens the next
-  world. Advanced ends in Mixed instead.
+  third ends the run as a failed try and goes back Home. The best score is kept and a retry
+  costs nothing. Passing opens the next world. Advanced ends in Mixed instead.
+- **Spaced review:** a mastered level comes due again after 1, 3, 7 and 21 days (a miss there
+  brings it back tomorrow). Due levels show ↻ on the path, come up more in review, and open the
+  next drill as a short warm-up (up to 3 problems, tagged "↻ warm-up, not counted"). The ★ is
+  never taken away.
 - **Find my level:** an optional 3-question check per world. Passing one starts you in the next
   world and counts as passing that world's challenge.
 - **Streak:** any 10 answers in a day keep it going (the ring on the 🔥 chip). One missed day a
@@ -28,7 +32,9 @@ pips in the drill, a 🔥 ring for the day.
 - **Timer:** every problem is timed from when it appears to when you submit. The ⏱ switch hides
   the running clock. Leaving the page mid-problem drops that problem.
 - **Feedback:** a wrong answer shows the right one, what you typed (struck through) and, for
-  multi-step problems, a breakdown of the pieces (for example 10% + 5% for 15%).
+  multi-step problems, a breakdown of the pieces (for example 10% + 5% for 15%). A wrong answer
+  with a recognisable cause gets a one-line hint: a misplaced decimal point, only the change
+  instead of the new amount, or the change applied the wrong way.
 - Answers accept a decimal comma or a point (`10,5` or `10.5`). Numbers show no thousands
   separator, so what's shown matches what's typed.
 - **Language:** English or Spanish, from the EN / ES switch. It starts in Spanish when the

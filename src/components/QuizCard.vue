@@ -21,6 +21,7 @@ import MascotDrop from './MascotDrop.vue'
 import { useI18n } from '@/composables/useI18n'
 import type { Problem } from '@/engine/levels'
 import { parseAnswer } from '@/engine/math'
+import { nearMiss } from '@/engine/nearMiss'
 
 const props = defineProps<{
   problem: Problem
@@ -37,6 +38,9 @@ const input = ref('')
 const inputEl = ref<HTMLInputElement>()
 const nextEl = ref<HTMLButtonElement>()
 const canSubmit = computed(() => parseAnswer(input.value) !== null)
+const hint = computed(() =>
+  props.verdict && !props.verdict.correct ? nearMiss(input.value, props.problem) : null,
+)
 
 function submit() {
   if (!props.verdict && canSubmit.value) emit('answer', input.value)
@@ -97,6 +101,7 @@ watch(
             }}
           </p>
         </div>
+        <p v-if="hint" class="text-sm font-semibold">{{ t(hint) }}</p>
         <p v-if="verdict.time" class="font-mono text-ink-muted tabular-nums">
           {{ verdict.time }}
         </p>

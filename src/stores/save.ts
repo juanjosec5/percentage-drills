@@ -4,6 +4,7 @@
 import { CHALLENGE_SIZE, hasChallenge } from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
 import type { Answer } from '@/engine/mastery'
+import { INTERVALS, type Spacing } from '@/engine/spaced'
 import { WORLDS, type WorldId } from '@/engine/worlds'
 
 /** Still `v1`: renaming the key would strand every existing save. The format version is inside. */
@@ -42,6 +43,8 @@ export interface Saved {
   /** Levels below this index were skipped by the placement ladder rather than practised. */
   placedUpTo: number
   challenges: Challenges
+  /** Spaced review of each mastered level, by level id. */
+  spaced: Record<string, Spacing>
 }
 
 /**
@@ -182,11 +185,26 @@ export function normalize(raw: unknown): Saved {
         challenges[world.id] = Math.min(Math.floor(best), CHALLENGE_SIZE)
     }
 
+  // Added without a version bump: a save without it just starts its schedule from today.
+  const spaced: Saved['spaced'] = {}
+  if (isObject(s.spaced))
+    for (const [id, v] of Object.entries(s.spaced))
+      if (
+        isObject(v) &&
+        Number.isInteger(v.stage) &&
+        (v.stage as number) >= 0 &&
+        (v.stage as number) < INTERVALS.length &&
+        typeof v.last === 'string' &&
+        DAY_KEY.test(v.last)
+      )
+        spaced[id] = { stage: v.stage as number, last: v.last }
+
   return {
     version: SAVE_VERSION,
     unlocked: level,
     placedUpTo: Math.min(indexOf(s.placedUpTo), level),
     challenges,
+    spaced,
     history,
     days,
     settings: {

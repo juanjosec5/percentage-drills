@@ -32,6 +32,7 @@ export interface Seed {
   history?: Record<string, Answer[]>
   days?: Record<string, unknown>
   settings?: { showTimer: boolean; offeredPlacement?: boolean }
+  spaced?: Record<string, { stage: number; last: string }>
 }
 
 /**
