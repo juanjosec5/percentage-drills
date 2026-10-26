@@ -9,13 +9,17 @@ const HOP_MS = 600
 const POUR_MAX_MS = 3500
 /** The mascot's box is 45px tall; its round body centres 26px below its top. */
 const BODY_Y = 26
+
+/** A place on the path: a level, or the challenge at the end of a world. */
+export type Stop = { level: number } | { challenge: number }
 </script>
 
 <script setup lang="ts">
 // The levels as a path: one straight rail down the left, a node per level, grouped by world.
 // The current level's row holds the glass button (the #current slot), so where you are and what
 // you press are the same thing. Each row draws its own two stretches of rail, so the line can't
-// break between rows. Finished worlds fold to one line.
+// break between rows. Finished worlds fold to one line. A world that ends in a challenge has a
+// checkpoint row after its last level: a flag planted on the rail.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BurstRing from './BurstRing.vue'
@@ -23,47 +27,72 @@ import MascotDrop from './MascotDrop.vue'
 import PlipAlive from './PlipAlive.vue'
 import { BUZZ, useHaptics } from '@/composables/useHaptics'
 import { useI18n } from '@/composables/useI18n'
+import { challengeTitle, hasChallenge } from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
 import { createRng } from '@/engine/rng'
 import { WORLDS, worldOf } from '@/engine/worlds'
 import { useProgress } from '@/stores/progress'
 
 const props = defineProps<{
-  /** The level just finished, when Home opens straight after a level-up: plays the moment. */
-  levelUp: number | null
+  /** The stop just finished, when Home opens straight after one: plays the moment. */
+  finished: Stop | null
 }>()
-const emit = defineEmits<{ start: [level: number]; settled: [] }>()
+const emit = defineEmits<{ start: [level: number]; challenge: [world: number]; settled: [] }>()
 const { t } = useI18n()
 const progress = useProgress()
 const haptics = useHaptics()
 
-// The level-up moment, in phases. 'pour': the glass fills to the top on the finished row.
-// 'burst': that row turns into a ★ with a burst. 'hop': the drop hops down the rail to the next
-// level, whose glass is laid out (hidden) before the hop, so the landing spot never moves.
-// Any tap or key skips to the end; with reduced motion there is no moment at all.
+// The moment after finishing a stop, in phases. 'pour': the glass fills to the top on the
+// finished level's row. 'burst': that row turns into a ★ (or the flag, for a passed challenge)
+// with a burst. 'hop': the drop hops down the rail to the next stop, whose card is laid out
+// (hidden) before the hop, so the landing spot never moves. A passed challenge has no glass, so
+// its moment starts at the burst. Any tap or key skips to the end; with reduced motion there is
+// no moment at all.
 type Phase = 'pour' | 'burst' | 'hop' | null
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches
-const phase = ref<Phase>(props.levelUp !== null && !still ? 'pour' : null)
-const from = props.levelUp ?? -1
+const from = props.finished
+const fromLevel = from && 'level' in from ? from.level : -1
+const fromGate = from && 'challenge' in from ? from.challenge : -1
+const phase = ref<Phase>(from && !still ? (fromLevel >= 0 ? 'pour' : 'burst') : null)
 
-/** The row holding the glass: the finished level while it pours, then the new current level. */
-const cardRow = computed(() =>
-  phase.value === 'pour' ? from : phase.value === 'burst' ? -1 : progress.unlocked,
+// Rows are keyed by stop: 'l3' is level 3, 'g0' the first world's checkpoint.
+const levelKey = (i: number) => `l${i}`
+const gateKey = (w: number) => `g${w}`
+const fromKey = fromGate >= 0 ? gateKey(fromGate) : levelKey(fromLevel)
+const fromWorld = fromGate >= 0 ? fromGate : worldOf(fromLevel)
+const here = computed(() =>
+  progress.gate !== null ? gateKey(progress.gate) : levelKey(progress.unlocked),
 )
-const isCurrent = (i: number) => i === cardRow.value
+
+/** The row holding the main card: the finished level while it pours, then the next stop. */
+const cardKey = computed(() =>
+  phase.value === 'pour' ? fromKey : phase.value === 'burst' ? '' : here.value,
+)
+const isCurrent = (key: string) => key === cardKey.value
+/** Done: before the current level, or the current one itself once it's the last or at a gate. */
 const isMastered = (i: number) =>
-  (i < progress.unlocked || progress.allMastered) && !(phase.value === 'pour' && i === from)
-/** The rail lags during the moment: the stretch into the new level is drawn as the drop hops. */
-const litUpTo = computed(() => (phase.value ? from : progress.unlocked))
+  (i < progress.unlocked ||
+    (i === progress.unlocked && (progress.allMastered || progress.gate !== null))) &&
+  !(phase.value === 'pour' && i === fromLevel)
+
+// Positions along the path, to light the rail: a level at its index, a checkpoint half a step
+// past its world's last level (the same scale as progress.step). The rail lags during the
+// moment: the stretch into the new stop is drawn as the drop hops.
+const gatePos = (w: number) => WORLDS[w].to + 0.5
+const fromPos = fromGate >= 0 ? gatePos(fromGate) : fromLevel
+const litTo = computed(() => (phase.value ? fromPos : progress.step))
+/** The world's last row: its checkpoint, if it has one, else its last level. */
+const lastPos = (w: number) => (hasChallenge(w) ? gatePos(w) : WORLDS[w].to)
+
 const worldDone = (w: number) =>
   WORLDS[w].to < progress.unlocked || (progress.allMastered && w === WORLDS.length - 1)
 const reached = (w: number) => WORLDS[w].from <= progress.unlocked
 
 /** Finished worlds the learner opened again. */
 const unfolded = ref(new Set<number>())
-// The finished level's world stays open during the moment, so the hop starts from a real row.
+// The finished stop's world stays open during the moment, so the hop starts from a real row.
 const folded = (w: number) =>
-  worldDone(w) && !unfolded.value.has(w) && !(phase.value && worldOf(from) === w)
+  worldDone(w) && !unfolded.value.has(w) && !(phase.value && fromWorld === w)
 function toggle(w: number) {
   const next = new Set(unfolded.value)
   if (!next.delete(w)) next.add(w)
@@ -87,7 +116,8 @@ function peek(i: number) {
   peekTimer = setTimeout(() => (peeking.value = null), PEEK_MS)
 }
 onBeforeUnmount(() => clearTimeout(peekTimer))
-const showsSample = (i: number) => i === progress.unlocked + 1 || peeking.value === i
+const showsSample = (i: number) =>
+  (i === progress.unlocked + 1 && progress.gate === null) || peeking.value === i
 
 // The locks wobble once per visit to the app, the first time Home shows them: a hint that rows
 // respond to a tap, without a word of copy.
@@ -95,13 +125,13 @@ const wobble = !seen.locks
 seen.locks = true
 
 // The flying mascot and the rail that fills behind it, positioned from the rendered rows.
-const rows = new Map<number, HTMLElement>()
-const rowRef = (i: number) => (el: unknown) => {
-  if (el) rows.set(i, el as HTMLElement)
-  else rows.delete(i)
+const rows = new Map<string, HTMLElement>()
+const rowRef = (key: string) => (el: unknown) => {
+  if (el) rows.set(key, el as HTMLElement)
+  else rows.delete(key)
 }
-const nodeY = (i: number) => {
-  const li = rows.get(i)!
+const nodeY = (key: string) => {
+  const li = rows.get(key)!
   return li.offsetTop + parseFloat(getComputedStyle(li).getPropertyValue('--node-y'))
 }
 const flyerEl = ref<HTMLElement>()
@@ -118,20 +148,25 @@ let hopAnim: Animation | undefined
 function onFull() {
   if (phase.value !== 'pour') return
   clearTimeout(timer)
+  burst()
+}
+
+function burst() {
   phase.value = 'burst'
   haptics.buzz(BUZZ.levelUp)
-  nextTick(() => (flyerTop.value = nodeY(from) - BODY_Y))
+  nextTick(() => (flyerTop.value = nodeY(fromKey) - BODY_Y))
   timer = setTimeout(hop, BURST_MS)
 }
 
 async function hop() {
   phase.value = 'hop'
   await nextTick()
-  const a = nodeY(from)
-  const b = nodeY(progress.unlocked)
+  const a = nodeY(fromKey)
+  const b = nodeY(here.value)
   flyerTop.value = a - BODY_Y
   // Across a world's border there's no rail between the rows to fill.
-  if (worldOf(from) === worldOf(progress.unlocked)) railFill.value = { top: a, height: b - a }
+  const toWorld = progress.gate ?? worldOf(progress.unlocked)
+  if (fromWorld === toWorld) railFill.value = { top: a, height: b - a }
   await nextTick()
   const dy = b - a
   hopAnim = flyerEl.value?.animate(
@@ -176,7 +211,8 @@ function settle() {
 
 onMounted(() => {
   if (!phase.value) return
-  timer = setTimeout(onFull, POUR_MAX_MS)
+  if (phase.value === 'burst') burst()
+  else timer = setTimeout(onFull, POUR_MAX_MS)
   skipOnInput(true)
 })
 onBeforeUnmount(() => {
@@ -220,17 +256,17 @@ onBeforeUnmount(() => {
         <li
           v-for="i in levelsIn(w)"
           :key="LEVELS[i].id"
-          :ref="rowRef(i)"
+          :ref="rowRef(levelKey(i))"
           class="row"
           :class="{
             first: i === world.from,
             last: i === LEVELS.length - 1,
-            'lit-in': i <= litUpTo && i !== world.from,
-            'lit-out': i < litUpTo && i !== world.to,
-            current: isCurrent(i),
+            'lit-in': i <= litTo && i !== world.from,
+            'lit-out': i < litTo && i !== lastPos(w),
+            current: isCurrent(levelKey(i)),
           }"
         >
-          <template v-if="isCurrent(i)">
+          <template v-if="isCurrent(levelKey(i))">
             <span class="node node-current" aria-hidden="true">
               <PlipAlive v-if="flyerTop === null" :size="40" />
             </span>
@@ -240,14 +276,14 @@ onBeforeUnmount(() => {
               class="min-w-0 flex-1 py-2"
               :class="{ 'opacity-0': phase === 'hop', 'animate-fade': arrived }"
             >
-              <slot name="current" :on-full="onFull" :level="cardRow" />
+              <slot name="current" :on-full="onFull" :level="i" :challenge="null" />
             </div>
           </template>
 
           <button v-else-if="isMastered(i)" class="row-btn group" @click="emit('start', i)">
             <span
               class="node bg-star text-ink shadow-soft"
-              :class="{ stamp: phase === 'hop' && i === from }"
+              :class="{ stamp: phase === 'hop' && i === fromLevel }"
               role="img"
               :aria-label="t(progress.isPlaced(i) ? 'home.placed' : 'home.mastered')"
               >★</span
@@ -285,7 +321,72 @@ onBeforeUnmount(() => {
             >
           </button>
           <BurstRing
-            v-if="phase === 'burst' && i === from"
+            v-if="phase === 'burst' && i === fromLevel"
+            class="left-[18px]"
+            :style="{ top: 'var(--node-y)' }"
+          />
+        </li>
+
+        <!-- The checkpoint: the rail runs up into the flag's pole. Grey until it's reached, then
+             the current stop (Plip on it, the challenge card beside), gold once passed. -->
+        <li
+          v-if="hasChallenge(w)"
+          :ref="rowRef(gateKey(w))"
+          class="row last gate"
+          :class="{
+            'lit-in': gatePos(w) <= litTo,
+            current: isCurrent(gateKey(w)),
+          }"
+        >
+          <template v-if="isCurrent(gateKey(w))">
+            <span class="node node-current" aria-hidden="true">
+              <PlipAlive v-if="flyerTop === null" :size="40" />
+            </span>
+            <div
+              class="min-w-0 flex-1 py-2"
+              :class="{ 'opacity-0': phase === 'hop', 'animate-fade': arrived }"
+            >
+              <slot name="current" :on-full="onFull" :level="world.to" :challenge="w" />
+            </div>
+          </template>
+
+          <button
+            v-else-if="progress.passed(w)"
+            class="row-btn group"
+            @click="emit('challenge', w)"
+          >
+            <span
+              class="node text-star"
+              :class="{ stamp: phase === 'hop' && w === fromGate }"
+              role="img"
+              :aria-label="t('challenge.passed')"
+            >
+              <svg viewBox="0 0 28 28" class="size-7" aria-hidden="true">
+                <rect x="12.5" y="1" width="3" height="26" rx="1.5" class="fill-ink/70" />
+                <path d="M15.5 2 Q21 0 27 3.5 L27 13 Q21 10 15.5 13 Z" fill="currentColor" />
+              </svg>
+            </span>
+            <span class="font-medium group-hover:underline group-hover:underline-offset-4">
+              {{ t(challengeTitle(w)) }}
+            </span>
+          </button>
+
+          <div v-else class="row-btn locked">
+            <span class="node text-ink-muted/45" aria-hidden="true">
+              <svg viewBox="0 0 28 28" class="size-7">
+                <rect x="12.5" y="1" width="3" height="26" rx="1.5" fill="currentColor" />
+                <!-- Furled: the cloth hangs wrapped against the pole. -->
+                <path d="M15.5 2 Q22 7 15.5 19 Z" fill="currentColor" />
+              </svg>
+            </span>
+            <span class="flex min-w-0 flex-col">
+              <span class="font-medium text-ink-muted">{{ t(challengeTitle(w)) }}</span>
+              <span class="font-mono text-xs text-ink-muted">{{ t('challenge.rule') }}</span>
+            </span>
+            <span class="lock ml-auto text-xs" role="img" :aria-label="t('home.locked')">🔒</span>
+          </div>
+          <BurstRing
+            v-if="phase === 'burst' && w === fromGate"
             class="left-[18px]"
             :style="{ top: 'var(--node-y)' }"
           />

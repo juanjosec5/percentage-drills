@@ -1,12 +1,14 @@
 // The saved format, kept apart from the store so it can be checked without Vue: what a save looks
 // like, how an older one is upgraded, and how anything read back (storage or an imported file)
 // is validated before the app trusts it.
+import { CHALLENGE_SIZE, hasChallenge } from '@/engine/challenge'
 import { LEVELS } from '@/engine/levels'
 import type { Answer } from '@/engine/mastery'
+import { WORLDS, type WorldId } from '@/engine/worlds'
 
 /** Still `v1`: renaming the key would strand every existing save. The format version is inside. */
 export const KEY = 'percent-drills:v1'
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 /**
  * Answers kept per level. Mastery counts on-time right answers in here, so the cap sits far above
  * GOAL: even a learner who misses most of them reaches GOAL long before old ones drop off.
@@ -27,6 +29,10 @@ export interface Settings {
   offeredPlacement: boolean
 }
 
+/** Each world challenge's best score, 0..CHALLENGE_SIZE; a full score passed it. */
+export type Challenges = Partial<Record<WorldId, number>>
+
+/** Progress as the app uses it: levels by their place in LEVELS. */
 export interface Saved {
   version: number
   unlocked: number
@@ -35,6 +41,18 @@ export interface Saved {
   settings: Settings
   /** Levels below this index were skipped by the placement ladder rather than practised. */
   placedUpTo: number
+  challenges: Challenges
+}
+
+/**
+ * Progress as it's stored and exported: levels by id, not position, so adding or reordering
+ * levels never needs another migration of the frontier.
+ */
+export interface Stored extends Omit<Saved, 'unlocked' | 'placedUpTo'> {
+  /** The current level. */
+  current: string
+  /** The first level placement didn't skip. */
+  placedUpTo: string
 }
 
 const DEFAULT_SETTINGS: Settings = { showTimer: true, offeredPlacement: false }
@@ -61,7 +79,37 @@ export const migrations: ((save: Raw) => Raw)[] = [
     if (isObject(history)) delete history['ten-round']
     return { ...save, unlocked: down(save.unlocked), placedUpTo: down(save.placedUpTo), history }
   },
+  // 4 → 5: levels by id instead of index, and world challenges. Anyone already past a world's
+  // border is past its challenge too: nobody gets locked back. Uses v4's own ladder and borders,
+  // frozen here, so later changes to LEVELS can't change what this step does.
+  (save) => {
+    const ids = V4_IDS
+    const idAt = (v: unknown) =>
+      Number.isInteger(v) ? ids[Math.min(Math.max(v as number, 0), ids.length - 1)] : undefined
+    const challenges: Challenges = {}
+    if (Number.isInteger(save.unlocked))
+      for (const [world, last] of Object.entries(V4_LAST))
+        if ((save.unlocked as number) > last) challenges[world as WorldId] = CHALLENGE_SIZE
+    const { unlocked, ...rest } = save
+    return { ...rest, current: idAt(unlocked), placedUpTo: idAt(save.placedUpTo), challenges }
+  },
 ]
+
+/** The v4 ladder, in order, and the last level of each world that now ends in a challenge. */
+const V4_IDS = [
+  'ten-any',
+  'five',
+  'one',
+  'tens',
+  'fractions',
+  'fifteen',
+  'build',
+  'swap',
+  'what-percent',
+  'change',
+  'mixed',
+]
+const V4_LAST: Record<string, number> = { beginner: 3, intermediate: 7 }
 
 /** Saves without a version predate versioning: v1. */
 export function versionOf(raw: Raw): number {
@@ -104,7 +152,6 @@ const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/
  */
 export function normalize(raw: unknown): Saved {
   const s = migrate(isObject(raw) ? raw : {})
-  const unlocked = Number.isInteger(s.unlocked) ? (s.unlocked as number) : 0
   const settings = isObject(s.settings) ? s.settings : {}
 
   const history: Saved['history'] = {}
@@ -119,12 +166,27 @@ export function normalize(raw: unknown): Saved {
       if (day) days[key] = day
     }
 
-  const level = Math.min(Math.max(unlocked, 0), LEVELS.length - 1)
-  const placed = Number.isInteger(s.placedUpTo) ? (s.placedUpTo as number) : 0
+  // An unknown id (hand-edited, or a level this build doesn't have) starts from the beginning.
+  const indexOf = (id: unknown) =>
+    Math.max(
+      LEVELS.findIndex((l) => l.id === id),
+      0,
+    )
+  const level = indexOf(s.current)
+
+  const challenges: Challenges = {}
+  if (isObject(s.challenges))
+    for (const [w, world] of WORLDS.entries()) {
+      const best = s.challenges[world.id]
+      if (hasChallenge(w) && isCount(best))
+        challenges[world.id] = Math.min(Math.floor(best), CHALLENGE_SIZE)
+    }
+
   return {
     version: SAVE_VERSION,
     unlocked: level,
-    placedUpTo: Math.min(Math.max(placed, 0), level),
+    placedUpTo: Math.min(indexOf(s.placedUpTo), level),
+    challenges,
     history,
     days,
     settings: {
@@ -138,8 +200,13 @@ export function normalize(raw: unknown): Saved {
   }
 }
 
+/** The stored form of progress: see Stored. */
+export function serialize({ unlocked, placedUpTo, ...rest }: Saved): Stored {
+  return { ...rest, current: LEVELS[unlocked].id, placedUpTo: LEVELS[placedUpTo].id }
+}
+
 /**
- * Reads an exported file. Null unless it parses and has the three progress fields, so another
+ * Reads an exported file. Null unless it parses and has the progress fields (any version's), so another
  * app's JSON is turned away instead of silently becoming an empty save.
  */
 export function parseBackup(text: string): Saved | null {
@@ -149,7 +216,8 @@ export function parseBackup(text: string): Saved | null {
   } catch {
     return null
   }
-  if (!isObject(raw) || !('unlocked' in raw && 'history' in raw && 'days' in raw)) return null
+  const hasLevel = isObject(raw) && ('current' in raw || 'unlocked' in raw)
+  if (!isObject(raw) || !hasLevel || !('history' in raw && 'days' in raw)) return null
   return normalize(raw)
 }
 

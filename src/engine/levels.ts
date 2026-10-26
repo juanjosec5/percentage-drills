@@ -4,7 +4,7 @@
 import { msg, type Msg } from '@/i18n'
 
 import { applyChange, percentOf } from './math'
-import { int, multiple, pick, type Rng } from './rng'
+import { int, multiple, pick, weighted, type Rng } from './rng'
 
 /** A stretch of the bar, in percent of the base: [from, to]. */
 export interface Segment {
@@ -283,18 +283,21 @@ export const REVIEW_SHARE = 0.3
 /**
  * The next problem at a level, plus the index of the level it came from (an earlier one
  * when it's a review problem). Avoids repeating the previous prompt. `ramp` (0..1) is the
- * learner's progress through this level; review problems use the full range.
+ * learner's progress through this level; review problems use the full range. `reviewWeights`
+ * (one per earlier level, see reviewWeight) aims reviews at shaky levels; without it they're even.
  */
 export function nextProblem(
   levelIndex: number,
   rng: Rng,
   previous?: Msg,
   ramp = 1,
+  reviewWeights?: number[],
 ): { problem: Problem; levelIndex: number } {
   const last = JSON.stringify(previous)
+  const weights = reviewWeights ?? Array<number>(levelIndex).fill(1)
   for (let tries = 0; ; tries++) {
     const review = levelIndex > 0 && rng() < REVIEW_SHARE
-    const from = review ? int(rng, 0, levelIndex - 1) : levelIndex
+    const from = review ? weighted(rng, weights.slice(0, levelIndex)) : levelIndex
     const problem = LEVELS[from].generate(rng, review ? 1 : ramp)
     if (JSON.stringify(problem.prompt) !== last || tries > 10) return { problem, levelIndex: from }
   }

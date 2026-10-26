@@ -65,5 +65,5 @@ test('reset erases progress but keeps the timer setting', async ({ page }) => {
   await page.getByRole('button', { name: 'Reset progress' }).click()
   await expect(cta(page)).toContainText('level 1')
   const saved = await stored(page)
-  expect(saved).toMatchObject({ unlocked: 0, days: {}, settings: { showTimer: false } })
+  expect(saved).toMatchObject({ current: 'ten-any', days: {}, settings: { showTimer: false } })
 })

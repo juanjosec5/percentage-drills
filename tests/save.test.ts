@@ -7,6 +7,7 @@ import {
   normalize,
   parseBackup,
   SAVE_VERSION,
+  serialize,
   versionOf,
 } from '@/stores/save'
 
@@ -18,6 +19,26 @@ const V1 = {
   history: { one: [R, { correct: false, ms: 4000 }], tens: [] },
   days: { '2026-10-22': DAY, '2026-10-23': { ...DAY, bestMs: null } },
   settings: { showTimer: false },
+}
+/** V1 as this version stores it: levels by id. Old level 4 is "1%" since the 10% levels merged. */
+const STORED = {
+  version: SAVE_VERSION,
+  current: 'one',
+  placedUpTo: 'ten-any',
+  challenges: {},
+  history: V1.history,
+  days: V1.days,
+  settings: { showTimer: false, offeredPlacement: false },
+}
+/** What the app works with for either of them. */
+const LOADED = {
+  version: SAVE_VERSION,
+  unlocked: 2,
+  placedUpTo: 0,
+  challenges: {},
+  history: V1.history,
+  days: V1.days,
+  settings: STORED.settings,
 }
 
 describe('versions', () => {
@@ -51,27 +72,46 @@ describe('versions', () => {
     expect(v4({ unlocked: 'x', history: 'y' })).toMatchObject({ unlocked: 'x', history: 'y' })
   })
 
-  it('loads a v1 save, stamped with the current version and its level moved down one', () => {
-    expect(normalize(structuredClone(V1))).toEqual({
-      ...V1,
-      unlocked: V1.unlocked - 1,
-      version: SAVE_VERSION,
-      placedUpTo: 0,
-      settings: { ...V1.settings, offeredPlacement: false },
+  it('migrates v4 → v5: levels by id, and challenges passed for every border already crossed', () => {
+    const v5 = migrations[3]
+    expect(v5({ unlocked: 2, placedUpTo: 1 })).toEqual({
+      current: 'one',
+      placedUpTo: 'five',
+      challenges: {},
     })
+    // Past Beginner's last level (3) but not Intermediate's (7).
+    expect(v5({ unlocked: 4 })).toMatchObject({
+      current: 'fractions',
+      challenges: { beginner: 10 },
+    })
+    expect(v5({ unlocked: 10 })).toMatchObject({
+      current: 'mixed',
+      challenges: { beginner: 10, intermediate: 10 },
+    })
+    // On a world's last level the challenge is still ahead.
+    expect(v5({ unlocked: 7 }).challenges).toEqual({ beginner: 10 })
+    expect(v5({ unlocked: 99 }).current).toBe('mixed')
+    expect(v5({ unlocked: 'x' })).toMatchObject({ current: undefined, challenges: {} })
+  })
+
+  it('loads a v1 save, stamped with the current version and its level moved down one', () => {
+    expect(normalize(structuredClone(V1))).toEqual(LOADED)
   })
 
   it('runs no steps on a current or newer save', () => {
-    const current = { ...V1, version: SAVE_VERSION }
-    expect(migrate(current)).toBe(current)
-    const newer = { ...V1, version: SAVE_VERSION + 1 }
+    expect(migrate(STORED)).toBe(STORED)
+    const newer = { ...STORED, version: SAVE_VERSION + 1 }
     expect(migrate(newer)).toBe(newer)
-    expect(normalize(newer)).toEqual({
-      ...V1,
-      version: SAVE_VERSION,
-      placedUpTo: 0,
-      settings: { ...V1.settings, offeredPlacement: false },
-    })
+    expect(normalize(newer)).toEqual(LOADED)
+  })
+
+  it('stores levels by id, and reads them back', () => {
+    expect(serialize(LOADED)).toEqual(STORED)
+    expect(normalize(serialize(LOADED))).toEqual(LOADED)
+  })
+
+  it('starts over from an id this build has no level for', () => {
+    expect(normalize({ ...STORED, current: 'gone' }).unlocked).toBe(0)
   })
 })
 
@@ -130,7 +170,13 @@ describe('normalize: corrupt entries', () => {
 
   it('treats non-object history, days and settings as empty', () => {
     expect(
-      normalize({ version: SAVE_VERSION, unlocked: 2, history: [R], days: [DAY], settings: 'x' }),
+      normalize({
+        version: SAVE_VERSION,
+        current: 'one',
+        history: [R],
+        days: [DAY],
+        settings: 'x',
+      }),
     ).toEqual({
       version: SAVE_VERSION,
       unlocked: 2,
@@ -138,24 +184,27 @@ describe('normalize: corrupt entries', () => {
       days: {},
       settings: { showTimer: true, offeredPlacement: false },
       placedUpTo: 0,
+      challenges: {},
+    })
+  })
+
+  it('keeps only real challenge scores, capped at a full run', () => {
+    const challenges = { beginner: 12, intermediate: 'x', advanced: 4, nowhere: 3 }
+    expect(normalize({ ...STORED, challenges }).challenges).toEqual({ beginner: 10 })
+    expect(normalize({ ...STORED, challenges: { beginner: 6.5 } }).challenges).toEqual({
+      beginner: 6,
     })
   })
 })
 
 describe('backups', () => {
   it('round-trips a save through a file', () => {
-    const saved = normalize({ ...V1, unlocked: LEVELS.length - 1 })
-    expect(parseBackup(JSON.stringify(saved))).toEqual(saved)
+    const saved = normalize({ ...V1, unlocked: LEVELS.length })
+    expect(parseBackup(JSON.stringify(serialize(saved)))).toEqual(saved)
   })
 
   it('imports a v1-shaped file too', () => {
-    expect(parseBackup(JSON.stringify(V1))).toEqual({
-      ...V1,
-      unlocked: V1.unlocked - 1,
-      version: SAVE_VERSION,
-      placedUpTo: 0,
-      settings: { ...V1.settings, offeredPlacement: false },
-    })
+    expect(parseBackup(JSON.stringify(V1))).toEqual(LOADED)
   })
 
   it('cleans a hand-edited file instead of trusting it', () => {
@@ -176,8 +225,8 @@ describe('backups', () => {
 describe('placedUpTo', () => {
   it('defaults to 0 and never exceeds the unlocked level', () => {
     const v = SAVE_VERSION
-    expect(normalize({ version: v, unlocked: 2 }).placedUpTo).toBe(0)
-    expect(normalize({ version: v, unlocked: 2, placedUpTo: 5 }).placedUpTo).toBe(2)
-    expect(normalize({ version: v, unlocked: 4, placedUpTo: 'x' }).placedUpTo).toBe(0)
+    expect(normalize({ version: v, current: 'one' }).placedUpTo).toBe(0)
+    expect(normalize({ version: v, current: 'one', placedUpTo: 'fifteen' }).placedUpTo).toBe(2)
+    expect(normalize({ version: v, current: 'fractions', placedUpTo: 'x' }).placedUpTo).toBe(0)
   })
 })

@@ -5,34 +5,38 @@ sessions every day, and you only move up once a step is both accurate and fast.
 
 ## How it works
 
-The screens show progress instead of explaining it: a bar for the daily set, pips for the
-current level, a 🔥 count for the streak.
+The screens show progress instead of explaining it: a glass that fills on the current level,
+pips in the drill, a 🔥 ring for the day.
 
-- **Daily set:** 10 problems a day, shown as a 10-segment bar on the Start button.
-- **Streak:** any 10 answers in a day (daily set or endless) keep it going. One missed day a week
-  is forgiven automatically; two missed days in a row end it.
-- **Endless:** a new problem every time you answer one, for as long as you like.
+- **The path:** 11 levels in three worlds (Beginner, Intermediate, Advanced) down one rail. The
+  current level is the glass button; finished worlds fold to one line; a locked level shows a
+  sample problem when tapped. Plip, the drop on the rail, hops to the next stop after each one.
+- **Levels:** a level is done after **10 right answers within its time limit** (shown beside
+  the clock). Wrong or slow answers don't count, and nothing is ever taken back. About 30% of
+  problems review earlier levels, tagged "↺ review, not counted"; levels with recent misses come
+  up in review more often.
+- **World challenges:** Beginner and Intermediate end in a checkpoint flag. Finishing a world's
+  last level opens its challenge: 10 problems from the whole world, all right and within twice
+  the time, in a row. The first miss ends the run; the best score is kept and a retry costs
+  nothing. Passing opens the next world. Advanced ends in Mixed instead.
+- **Find my level:** an optional 3-question check per world. Passing one starts you in the next
+  world and counts as passing that world's challenge.
+- **Streak:** any 10 answers in a day keep it going (the ring on the 🔥 chip). One missed day a
+  week is forgiven automatically; two missed days in a row end it.
 - **Timer:** every problem is timed from when it appears to when you submit. The ⏱ switch hides
-  the running clock (the time still counts and shows after you answer). Leaving the page
-  mid-problem drops that problem, so an interruption never records a very slow answer.
-- **Feedback:** a right answer shows ✓ and Next. A wrong one shows the correct answer, what you
-  typed (struck through) and a breakdown: a bar of the pieces of the calculation (for example
-  10% + 5% for 15%) and the method for each.
-- **Tips:** a level's one-line tip (e.g. `19% = 20% − 1%`) shows on its first problem only.
-- **Levels:** 12 levels, from 10% of whole numbers to a mixed review. A level is done after
-  **10 right answers within its target time**. Wrong or slow answers don't count, and nothing is
-  ever taken back. About 30% of problems review earlier levels; they're tagged "↺ review" and
-  don't count toward the current level.
-- **Mastery meter:** 10 pips for the current level, one filled ✓ per counted answer, plus
-  "N more" in the drill. The glass on the Start button fills the same way.
-- Answers accept a decimal comma or a point (`10,5` or `10.5`).
-- **Language:** English or Spanish, from the EN / ES switch (on home and in the drill). It starts
-  in Spanish when the browser language is Spanish. Spanish shows decimals with a comma (`63,5`).
+  the running clock. Leaving the page mid-problem drops that problem.
+- **Feedback:** a wrong answer shows the right one, what you typed (struck through) and, for
+  multi-step problems, a breakdown of the pieces (for example 10% + 5% for 15%).
+- Answers accept a decimal comma or a point (`10,5` or `10.5`). Numbers show no thousands
+  separator, so what's shown matches what's typed.
+- **Language:** English or Spanish, from the EN / ES switch. It starts in Spanish when the
+  browser language is Spanish.
 
 Progress and the language choice are saved in the browser's localStorage
 (`percent-drills:v1` and `percent-drills:lang`). There is no backend. The save carries a format
 `version` (a save without one is v1); `src/stores/save.ts` upgrades older saves step by step
-and drops invalid entries before the app reads them. Export / Import on Home download the save
+and drops invalid entries before the app reads them. Since v5 the save names levels by id, not
+position, so adding levels doesn't move anyone's place. Export / Import on Home download the save
 as a JSON file and load one back through the same checks.
 
 ## Setup
@@ -57,6 +61,9 @@ The browser tests start their own Vite server on a free port. Install the browse
 which also fixes the problem sequence, so runs are repeatable. GitHub Actions
 (`.github/workflows/ci.yml`) runs the type-check, lint, unit tests, build and browser tests on
 every pull request and on pushes to `main`; a failed run uploads the Playwright report.
+
+`npm install` also points git at `.githooks/`, whose pre-commit hook runs the type-check, lint
+and unit tests before each commit (`git commit --no-verify` skips it once).
 
 ## Project layout
 
